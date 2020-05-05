@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tar on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/tar/</link>
+    <description>Recent content in Tar on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    
+	<atom:link href="http://petrie.github.io/tags/tar/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Tar in Linux</title>
+      <link>http://petrie.github.io/post/2012-10-19-linux-tar/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2012-10-19-linux-tar/</guid>
+      <description>将当前文件夹下的所有以.jpg为后缀的文件打包到all.tar.gz 压缩包内: &amp;gt;tar -czvf all.tar.gz * .jpg 将压缩文件all.tar.gz解压到文件夹dir下:</description>
+    </item>
+    
+  </channel>
+</rss>

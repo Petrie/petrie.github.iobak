@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Notes on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/notes/</link>
+    <description>Recent content in Notes on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    
+	<atom:link href="http://petrie.github.io/notes/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/readme/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/readme/</guid>
+      <description> Introduction </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/summary/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/summary/</guid>
+      <description> Table of contents  Introduction 面试题目 PHP Java Golang Shell C Javascript 操作系统 数据库 Redis Nginx 算法 网络协议 RPC 高可用 Codis 容器 数字证书 iptable PHP扩展 编译原理 网络编程 Swoole  </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/bian-yi-yuan-li/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/bian-yi-yuan-li/</guid>
+      <description>编译原理 编译原理 lex
+以 Lex 可以理解的格式指定模式相关的动作。 在这一文件上运行 Lex，生成扫描器的 C 代码。 编译和链接 C 代码，生成可执行的扫描器</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/c/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/c/</guid>
+      <description> C 基础 程序内存占用  https://github.com/gatieme/AderXCoding/tree/master/language/c/memory_layout
+  栈：由编译器自动分配，存放函数参数，局部变量 堆：程序中手动分配、释放 全局区：存放全局变量和静态变量 文字常量区：常量字符串 程序代码区：存放函数的二进制代码​  </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/cao-zuo-xi-tong/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/cao-zuo-xi-tong/</guid>
+      <description>操作系统 TOP https://blog.csdn.net/u011547375/article/details/9851455
+汇编语言  CPU通过地址总线送入存储器的必须是一个内存单元的物理地址 http://www.techbulo.com/708.html  I/O多路复用机制  https://www.zhihu.com/question/32163005
+https://segmentfault.com/a/1190000003063859
+ OS common sense  请分别简单说一说进程和线程以及它们的区别  进程是具有一定功能的程序关于某次数据集合上的一次运行活动，进程是系统资源调度和分配的一个独立单位 线程是进程的实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位 一个进程可以有多个线程，多个线程可以并发  线程同步的方式有哪些  互斥量：采用互斥对象的机制，只有拥有互斥对象的线程才有访问公共资源的权限。因为互斥对象只有一个，所以可以保证公共资源不会被多个线程同时访问。 信号量：它允许多个线程同一时刻访问同一资源，但是要控制同一时刻访问次资源的最大线程数。 事件（信号）：通过通知操作的方式来保证多线程同步，还可以方便的实现多线程优先级比较操作  进程的通信方式有哪些  管道、系统IPC（包括消息队列、信号量、共享内存）、SOCKET
+ 管道主要分为：普通管道PIPE、流管道、命名管道 管道是一种半双工的通信方式，数据只能单向流动，并且只能在具有亲缘关系的进程间流动，进程的亲缘关系通常是父子 命名管道也是半双工的通信方式，它允许无亲缘关系的进程间通信 信号量是一个计数器，用来控制多个进程对资源的访问，它通常作为一种锁机制。 消息队列是消息的链表，存放在内核中并有消息队列标识符标识。 信号是一种比较复杂的通信方式，用于通知接收进程某一事件已经发生。 共享内存就是映射一段能被其它进程访问的内存，这个共享内存由一个进程创建，但是多个进程可以访问。
+ 什么是缓冲区溢出？有什么危害？其原因是什么
+ 什么是死锁，死锁产生的条件？
+ 进程有哪几种状态
+ 分页和分段有什么区别
+ 操作系统进程调度策略
+ 进程同步的机制
+ 死锁处理的基本策略和常用方法
+ 进程管理
+ 操作系统为每一个进程维护一个PCB（Process Control Block） 每个PCB存储的信息有 进程状态，如ready，waiting 程序计数器：下一个指令的地址 CPU 寄存器：PC，working register，stack pointer，condition code CPU调度信息：调度顺序和优先级 内存管理信息：页段的指针 I/O status  抢占式调度：进程被强制放弃CPU</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/codis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/codis/</guid>
+      <description> Codis </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/docker/</guid>
+      <description> 容器 网络 http://cizixs.com/2016/06/12/docker-network-modes-explained
+http://cizixs.com/2016/06/01/docker-default-network
+swarm </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/golang/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/golang/</guid>
+      <description>Golang 单元测试  https://www.oschina.net/translate/building-a-testable-webapp
+ 内存管理  http://legendtkl.com/2017/04/02/golang-alloc/
+ 垃圾回收  http://legendtkl.com/2017/04/28/golang-gc/
+ 资料  https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/02.2.md
+ Go的http包详解  https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/03.4.md
+ 基础数据类型  https://research.swtch.com/godata
+ go语言设计初衷  有像C/C++那样的性能，可以做系统开发 没有繁琐的类型系统，有简单统一化的模块化依赖管理，编译速度飞快 像Java的垃圾回收 像python那样简单易学，拥有灵活的类型，支持函数式编程，异步IO 编译器进行类型检查 并发编程 channelsao  package main import &amp;quot;fmt&amp;quot; func sum(s []int, c chan int) { sum := 0 for _, v := range s { sum += v } c &amp;lt;- sum // send sum to c } func main() { s := []int{7, 2, 8, -9, 4, 0} c := make(chan int) go s(s[:len(s)/2], c) go sum(s[len(s)/2:], c) x, y := &amp;lt;-c, &amp;lt;-c // receive from c fmt.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/ha/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/ha/</guid>
+      <description> 高可用 keepalived http://keepalived.readthedocs.io/en/latest/introduction.html
+https://www.cnblogs.com/netonline/archive/2017/10/09/7642595.html
+haproxy LVS 脑裂 </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/iptables/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/iptables/</guid>
+      <description> iptable </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/java/</guid>
+      <description> Java 多线程  https://www.ibm.com/developerworks/cn/java/j-jtp04186/ https://www.ibm.com/developerworks/cn/java/j-jtp11234/  GC JVM 框架 </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/javascript/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/javascript/</guid>
+      <description> Javascript 定义：
+ 闭包是指在JavaScript中，内部函数总是可以访问其所在的外部函数中声明的参数和变量，即使再其外部函数被返回之后  场景：
+ 闭包通常用来创建内部变量，使得这些变量不能被外部随意修改，同时又可以通过指定的函数接口来操作。 迭代器，生成器  作用域链 闭包 </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/mian-shi-ti/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/mian-shi-ti/</guid>
+      <description>面试题目 管理岗  技术能力 沟通能力 项目管理 人员管理 业务熟悉度  职业规划  职业规划  一定数据量
+一定并发量
+ 公司选择  工程师文化
+技术态度开放
+ 架构师细分  系统架构师（System Architect）
+应用架构师（Application Architect）
+企业架构师（Enterprise Architect）
+基础设施架构师（Infrastructure Architect)
+ 架构师职责  确认需求 系统分解 技术选型 制定技术规范   技术面试题 来源：
+ https://www.toptal.com/php/interview-questions 腾讯面试题 https://blog.csdn.net/s1070/article/details/51174655  汇总
+ php实现冒泡排序  function bubbleSort(&amp;amp;$arr) { $arrSize = count($arr); for ($i = 0; $i &amp;lt; $arrSize -1; $i++) { for ($j = 0; $j &amp;lt; $arrSize -1 - $i; $j++) { if ($arr[$j] &amp;gt; $arr[$j + 1]) { $tmp = $arr[$j]; $arr[$j] = $arr[$j + 1]; $arr[$j+1] = $tmp; } } } }   php快速排序  function quickSort($array) { if(!</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/nginx/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/nginx/</guid>
+      <description>Nginx Nginx cgi### CGI scripts is a way how to run a server side script when a HTTP request comes;CGI脚本是一种如何在服务端运行HTTP请求的方式
+fastcgi### 比cgi更好的一种方式，GCI很慢，fastcgi更快
+php-fpm### fastcgi的php实现
+限流 限流算法令牌桶和漏桶对比：  令牌桶是按照固定速率往桶中添加令牌，请求是否被处理需要看桶中令牌是否足够，当令牌数减为零时则拒绝新的请求； 漏桶则是按照常量固定速率流出请求，流入请求速率任意，当流入的请求数累积到漏桶容量时，则新流入的请求被拒绝； 令牌桶限制的是平均流入速率（允许突发请求，只要有令牌就可以处理，支持一次拿3个令牌，4个令牌），并允许一定程度突发流量； 漏桶限制的是常量流出速率（即流出速率是一个固定常量值，比如都是1的速率流出，而不能一次是1，下次又是2），从而平滑突发流入速率； 令牌桶允许一定程度的突发，而漏桶主要目的是平滑流入速率；  配置优化性能篇 TCP优化 开启Gzip 开启缓存 配置选项## 虚拟主机与请求的转发 server_name匹配顺序
+ 首先选择所有字符串完全匹配的server_name，如www.testweb.com 其次选择通配符在前面的server_name，如*.testweb.com 再次选择通配符在后面的server_name，如www.testweb.* 最后选择使用正则表达式才匹配的server_name，如~^.testweb.com  location 匹配顺序
+ = 表示把URI作为字符串，以便与参数中的uri做完全匹配。例如  location =/ { #只有用户请求是/时，才会使用location下的配置 }   ~表示匹配URI时是字母大小写敏感的。 ~*表示匹配URI是忽略字母大小写问题。 ^~表示匹配URI时只需要其前半部分与uri参数匹配即可。例如：  location ^~ /images/{ #以/images/开始的请求都会匹配上 }   @表示仅用于Nginx服务内部请求之间的重定向，带有@的location不直接处理用户请求。  文件路径定义 alias root  根据HTTP返回码重定向</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/php-extension/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/php-extension/</guid>
+      <description>PHP扩展 基本语法 定义函数 ZEND_FUNCTION(academy_hello) { php_printf(&amp;quot;Hello Laravel Academy!\n&amp;quot;); } ZEND_FUNCTION(sample_long) { RETVAL_LONG(42); return; } ZEND_FUNCTION(sample_getlong) { long foo; if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, &amp;quot;l&amp;quot;, &amp;amp;foo) == FAILURE) { RETURN_NULL(); } php_printf(&amp;quot;The integer value of the parameter is: %ld\n&amp;quot;, foo); RETURN_TRUE; } /* {{{ calc_functions[] * * Every user visible function must have an entry in calc_functions[]. */ const zend_function_entry calc_functions[] = { ZEND_FE(academy_hello, NULL) ZEND_FE(sample_long, NULL) ZEND_FE(sample_getlong, NULL) PHP_FE_END /* Must be the last line in calc_functions[] */ }; /* }}} */ /* {{{ calc_module_entry */ zend_module_entry calc_module_entry = { STANDARD_MODULE_HEADER, &amp;quot;calc&amp;quot;, calc_functions, PHP_MINIT(calc), PHP_MSHUTDOWN(calc), PHP_RINIT(calc), /* Replace with NULL if there&#39;s nothing to do at request start */ PHP_RSHUTDOWN(calc), /* Replace with NULL if there&#39;s nothing to do at request end */ PHP_MINFO(calc), PHP_CALC_VERSION, STANDARD_MODULE_PROPERTIES }; /* }}} */  获取函数参数  获取字符串  ```c</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/php/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/php/</guid>
+      <description>PHP 引用变量 字符串  heredoc newdoc  empty vs isset vs is_null https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/  常量  PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数  Switch  case类型只能是 整形、浮点类型、字符串  扩展开发  http://www.imsiren.com/archives/196
+http://www.cunmou.com/phpbook/preface.md
+https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/
+http://0x1.im/blog/php/how-to-create-a-php-extension.html
+https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm
+ 协程  《GO语言编程》
+http://www.laruence.com/2015/05/28/3038.html
+ 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.
+协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.
+协程任务调度 协程堆栈 错误处理 同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO  http://blog.csdn.net/HQ354974212/article/details/76155906
+  同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。 阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。 各种IO特点  同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create 非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误 IO复用模型：同时对多个I/O端口进行侦听。  各种IO特点和优缺点  阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。 在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。   由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/redis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/redis/</guid>
+      <description>Redis Codis http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis
+数据结构 字符串 链表 链表节点
+typedef struct listNode{ //前置节点 struct listNode * prev； //后置节点 struct listNode * next； //节点的值 void * value; } listNode;  链表结构体
+typedef struct list{ //表头节点 //表尾节点 //链表所包含的节点数量 //节点值复制函数 //节点值释放函数 //节点值对比函数 }  字典 字典节点
+typedef struct dictEntry{ //key void *key, //value union{ void *val; uint64_tu64; int64_ts64; } v; struct dictEntry *next; } dictEntry;  字典结构体
+typedef struct dict{ //类型特定函数 dictType *type; //私有函数 void *privdata; //hash table dictht ht[2]; int trehashidx; }dict;  解决冲突 链表</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/rpc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/rpc/</guid>
+      <description> RPC </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/shell/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/shell/</guid>
+      <description>Shell shell  for循环  #!/bin/bash # this program counts from 1 to 10: for i in 1 2 3 4 5 6 7 8 9 10; do echo $i done  #!/bin/bash for file in *; do echo &amp;quot;Adding .html extension to $file...&amp;quot; mv $file $file.html sleep 1 done  for((i=1;i&amp;lt;=10;i++));do echo $(expr $i \* 4);done   if语句  #!/bin/bash if test -f /etc/foo then # file exists, so copy and print a message.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://petrie.github.io/notes/shu-ju-ku/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/notes/shu-ju-ku/</guid>
+      <description>数据库 缓存架构 进程内缓存
+到底选Redis还是Memcache，看看源码怎么说
+ 什么时候倾向于选择Redis  复杂数据结构 持久化：mc无法满足持久化的需求，只得选择redis 天然高可用：支持主从 存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。  什么时候倾向于选择memcache  纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。   如何应对潜在的雪崩？
+ 常见方案一：高可用缓存 常见方案二：缓存水平切分 db限流 快速失败  究竟先操作缓存，还是数据库？
+ 读请求，先读缓存，如果没有命中，读数据库，再set回缓存 写请求  先缓存，再数据库 缓存，使用delete，而不是set   Cache Aside Pattern（旁路缓存模式）
+ 对于读请求  先读cache，再读db 如果，cache hit，则直接返回数据 如果，cache miss，则访问db，并将数据set回缓存  对于写请求  淘汰缓存，而不是更新缓存 先操作数据库，再淘汰缓存  Cache Aside Pattern方案存在什么问题？  如果先操作数据库，再淘汰缓存，在原子性被破坏时：
+ 修改数据库成功了 淘汰缓存失败了  导致，数据库与缓存的数据不一致。
+数据库主从不一致，怎么解？
+数据库主库和从库不一致，常见有这么几种优化方案：
+ 业务可以接受，系统不优化 强制读主，高可用主库，用缓存提高读性能 在cache里记录哪些记录发生过写请求，来路由读主还是读从  数据库 概论  redis、memcache、mongoDB 对比</description>
+    </item>
+    
+  </channel>
+</rss>

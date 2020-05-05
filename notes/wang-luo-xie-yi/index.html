@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Petrie&#39;s Home</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="petrie" />
+  <meta name="description" content="网络协议 负载均衡 https://www.cnblogs.com/ilinuxer/p/6916913.html
+网络协议  https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html https://blog.csdn.net/qq_34501940/article/details/51073691
+ 有哪些私有或者保留地址说说    A类：10.0.0.0 - 10.255.255.255 B类：172.16.0.0 - 172.31.255.255 C类：192.168.0.0 - 192.168.255.255 IP地址分类，简单说一下各个分类  | | | | | | | :&amp;mdash; | :&amp;mdash; | :&amp;mdash; | :&amp;mdash; | :&amp;mdash; | | A类 | 以0开头 | 10.0.0.0-127.255.255.255 | | | | B类 | 以10开头 | 128.0.0.0-191.255.255.255 | | | | C类 | 以110开头 | 192.0.0.0-2 | | |
+ 简单解释ARP协议的工作过程  首先，每个主机都会在自己的ARP缓存中建立一个ARP列表，已表示IP地址和mac地址之间的关系。 当源主机要发送数据时，首先检查ARP列表中是否有对应的IP地址的目的主机的mac地址。如果有，则直接发送数据，如果没有，就向本网段所有主机发送ARP，该数据包包括的内容有：源主机ip地址，源主机mac地址，目的主机IP地址。 当本网络所有主机收到ARP数据包时，首先检查数据包中的ip地址是否是自己的地址，如果不是则忽略数据包，  OSI七层模型  应用层、表示层、会话层、传输层、网络层、数据链路层、物理层" />
+
+  <meta name="keywords" content="Petrie, golang, php, swoole" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.54-DEV" />
+
+
+<link rel="canonical" href="http://petrie.github.io/notes/wang-luo-xie-yi/" />
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.c8c1ff75dee09b44060a6c38f41b9036bac2512ccdb22d7f296cec12dc786375.css" integrity="sha256-yMH/dd7gm0QGCmw49BuQNrrCUSzNsi1/KWzsEtx4Y3U=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="网络协议 负载均衡 https://www.cnblogs.com/ilinuxer/p/6916913.html
+网络协议  https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html https://blog.csdn.net/qq_34501940/article/details/51073691
+ 有哪些私有或者保留地址说说    A类：10.0.0.0 - 10.255.255.255 B类：172.16.0.0 - 172.31.255.255 C类：192.168.0.0 - 192.168.255.255 IP地址分类，简单说一下各个分类  | | | | | | | :&mdash; | :&mdash; | :&mdash; | :&mdash; | :&mdash; | | A类 | 以0开头 | 10.0.0.0-127.255.255.255 | | | | B类 | 以10开头 | 128.0.0.0-191.255.255.255 | | | | C类 | 以110开头 | 192.0.0.0-2 | | |
+ 简单解释ARP协议的工作过程  首先，每个主机都会在自己的ARP缓存中建立一个ARP列表，已表示IP地址和mac地址之间的关系。 当源主机要发送数据时，首先检查ARP列表中是否有对应的IP地址的目的主机的mac地址。如果有，则直接发送数据，如果没有，就向本网段所有主机发送ARP，该数据包包括的内容有：源主机ip地址，源主机mac地址，目的主机IP地址。 当本网络所有主机收到ARP数据包时，首先检查数据包中的ip地址是否是自己的地址，如果不是则忽略数据包，  OSI七层模型  应用层、表示层、会话层、传输层、网络层、数据链路层、物理层" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://petrie.github.io/notes/wang-luo-xie-yi/" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="网络协议 负载均衡 https://www.cnblogs.com/ilinuxer/p/6916913.html
+网络协议  https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html https://blog.csdn.net/qq_34501940/article/details/51073691
+ 有哪些私有或者保留地址说说    A类：10.0.0.0 - 10.255.255.255 B类：172.16.0.0 - 172.31.255.255 C类：192.168.0.0 - 192.168.255.255 IP地址分类，简单说一下各个分类  | | | | | | | :&mdash; | :&mdash; | :&mdash; | :&mdash; | :&mdash; | | A类 | 以0开头 | 10.0.0.0-127.255.255.255 | | | | B类 | 以10开头 | 128.0.0.0-191.255.255.255 | | | | C类 | 以110开头 | 192.0.0.0-2 | | |
+ 简单解释ARP协议的工作过程  首先，每个主机都会在自己的ARP缓存中建立一个ARP列表，已表示IP地址和mac地址之间的关系。 当源主机要发送数据时，首先检查ARP列表中是否有对应的IP地址的目的主机的mac地址。如果有，则直接发送数据，如果没有，就向本网段所有主机发送ARP，该数据包包括的内容有：源主机ip地址，源主机mac地址，目的主机IP地址。 当本网络所有主机收到ARP数据包时，首先检查数据包中的ip地址是否是自己的地址，如果不是则忽略数据包，  OSI七层模型  应用层、表示层、会话层、传输层、网络层、数据链路层、物理层">
+
+
+
+<meta itemprop="wordCount" content="524">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="网络协议 负载均衡 https://www.cnblogs.com/ilinuxer/p/6916913.html
+网络协议  https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html https://blog.csdn.net/qq_34501940/article/details/51073691
+ 有哪些私有或者保留地址说说    A类：10.0.0.0 - 10.255.255.255 B类：172.16.0.0 - 172.31.255.255 C类：192.168.0.0 - 192.168.255.255 IP地址分类，简单说一下各个分类  | | | | | | | :&mdash; | :&mdash; | :&mdash; | :&mdash; | :&mdash; | | A类 | 以0开头 | 10.0.0.0-127.255.255.255 | | | | B类 | 以10开头 | 128.0.0.0-191.255.255.255 | | | | C类 | 以110开头 | 192.0.0.0-2 | | |
+ 简单解释ARP协议的工作过程  首先，每个主机都会在自己的ARP缓存中建立一个ARP列表，已表示IP地址和mac地址之间的关系。 当源主机要发送数据时，首先检查ARP列表中是否有对应的IP地址的目的主机的mac地址。如果有，则直接发送数据，如果没有，就向本网段所有主机发送ARP，该数据包包括的内容有：源主机ip地址，源主机mac地址，目的主机IP地址。 当本网络所有主机收到ARP数据包时，首先检查数据包中的ip地址是否是自己的地址，如果不是则忽略数据包，  OSI七层模型  应用层、表示层、会话层、传输层、网络层、数据链路层、物理层"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Petrie</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Petrie
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+  
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+    
+    <div class="post-meta">
+      <time datetime="0001-01-01" class="post-time">
+        0001-01-01
+      </time>
+    </div>
+  </header>
+
+  
+  
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#网络协议">网络协议</a>
+<ul>
+<li><a href="#负载均衡">负载均衡</a></li>
+<li><a href="#网络协议-1">网络协议</a>
+<ul>
+<li><a href="#http">HTTP</a>
+<ul>
+<li><a href="#状态码">状态码</a></li>
+<li><a href="#cookie">Cookie</a></li>
+<li><a href="#安全相关的http响应头">安全相关的HTTP响应头</a></li>
+<li><a href="#transfer-encoding">Transfer-Encoding</a></li>
+<li><a href="#accept-encoding-content-encode">Accept-Encoding/Content-Encode</a></li>
+<li><a href="#用户ip">用户IP</a></li>
+<li><a href="#vary">Vary</a></li>
+<li><a href="#sse">SSE</a></li>
+<li><a href="#ws-websocket">WS（Websocket）</a></li>
+<li><a href="#从nginx默认不压缩http1-0说起">从nginx默认不压缩http1.0说起</a></li>
+<li><a href="#简述get和post区别">简述GET和POST区别</a></li>
+</ul></li>
+<li><a href="#https">HTTPS</a>
+<ul>
+<li><a href="#主要功能">主要功能</a></li>
+<li><a href="#对称加密">对称加密</a></li>
+<li><a href="#非对称加密">非对称加密</a></li>
+<li><a href="#false-start">False Start</a></li>
+<li><a href="#证书链">证书链</a></li>
+<li><a href="#ecc-certificate">ECC certificate</a></li>
+</ul></li>
+<li><a href="#http-2">HTTP 2</a></li>
+<li><a href="#tcp-ip">TCP/IP</a>
+<ul>
+<li><a href="#wait">-WAIT</a></li>
+<li><a href="#common-sense">Common Sense</a></li>
+<li><a href="#慢启动">慢启动</a></li>
+<li><a href="#拥塞避免">拥塞避免</a></li>
+<li><a href="#快速重传">快速重传</a></li>
+<li><a href="#快速恢复">快速恢复</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+
+  
+  <div class="post-content">
+      
+
+<h1 id="网络协议">网络协议</h1>
+
+<h2 id="负载均衡">负载均衡</h2>
+
+<p><a href="https://www.cnblogs.com/ilinuxer/p/6916913.html">https://www.cnblogs.com/ilinuxer/p/6916913.html</a></p>
+
+<h2 id="网络协议-1">网络协议</h2>
+
+<blockquote>
+<p><a href="https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html">https://www.cnblogs.com/li-hao/archive/2011/12/07/2279912.html</a> <a href="https://blog.csdn.net/qq_34501940/article/details/51073691">https://blog.csdn.net/qq_34501940/article/details/51073691</a></p>
+
+<ul>
+<li>有哪些私有或者保留地址说说</li>
+</ul>
+</blockquote>
+
+<ul>
+<li>A类：10.0.0.0 - 10.255.255.255</li>
+<li>B类：172.16.0.0 - 172.31.255.255</li>
+<li>C类：192.168.0.0 - 192.168.255.255</li>
+<li>IP地址分类，简单说一下各个分类</li>
+</ul>
+
+<p>|  |  |  |  |  |
+  | :&mdash; | :&mdash; | :&mdash; | :&mdash; | :&mdash; |
+  | A类 | 以0开头 | 10.0.0.0-127.255.255.255 |  |  |
+  | B类 | 以10开头 | 128.0.0.0-191.255.255.255 |  |  |
+  | C类 | 以110开头 | 192.0.0.0-2 |  |  |</p>
+
+<ul>
+<li>简单解释ARP协议的工作过程
+
+<ul>
+<li>首先，每个主机都会在自己的ARP缓存中建立一个ARP列表，已表示IP地址和mac地址之间的关系。</li>
+<li>当源主机要发送数据时，首先检查ARP列表中是否有对应的IP地址的目的主机的mac地址。如果有，则直接发送数据，如果没有，就向本网段所有主机发送ARP，该数据包包括的内容有：源主机ip地址，源主机mac地址，目的主机IP地址。</li>
+<li>当本网络所有主机收到ARP数据包时，首先检查数据包中的ip地址是否是自己的地址，如果不是则忽略数据包，</li>
+</ul></li>
+<li>OSI七层模型</li>
+</ul>
+
+<p>应用层、表示层、会话层、传输层、网络层、数据链路层、物理层</p>
+
+<ul>
+<li>TCP／IP四层模型</li>
+</ul>
+
+<p>应用层、传输层、网络互联层、网络接口层</p>
+
+<ul>
+<li><p>了解的端口和对应的服务</p>
+
+<ul>
+<li>FTP：21 、SSH：22、telnet：23、http:80、HTTPS：443、oracle：1521、mysql：3306、dns：53、smtp：25</li>
+</ul></li>
+</ul>
+
+<p>​</p>
+
+<h3 id="http">HTTP</h3>
+
+<h4 id="状态码">状态码</h4>
+
+<ul>
+<li>502 作为网关或者代理工作的服务器尝试执行请求时，从上游服务器接收到无效的响应。
+
+<ul>
+<li>php-fpm没有启动,nginx无法将请求交给php-fpm</li>
+<li>php-fpm运行脚本超时，php-fpm终止了脚本的执行和执行脚本的Worker进程，nginx发现自己与php-fpm的连接断开。</li>
+</ul></li>
+
+<li><p>504</p>
+
+<ul>
+<li>504即nginx超过了自己设置的超时时间，不等待php-fpm的返回结果，直接给客户端返回504错误。但是此时php-fpm依然还在处理请求（在没有超出自己的超时时间的情况下）。</li>
+<li>这里有三个相关的配置：</li>
+<li>fastcgi_connect_timeout 300;</li>
+</ul>
+
+<p>指定连接到后端FastCGI的超时时间。</p>
+
+<ul>
+<li>fastcgi_send_timeout 300;</li>
+</ul>
+
+<p>向FastCGI传送请求的超时时间，这个值是指已经完成两次握手后向FastCGI传送请求的超时时间。</p>
+
+<ul>
+<li>fastcgi_read_timeout 300;</li>
+</ul>
+
+<p>接收FastCGI应答的超时时间，这个值是指已经完成两次握手后接收FastCGI应答的超时时间。</p></li>
+
+<li><p>499 客户端主动断开链接，一般是因为超时导致</p></li>
+
+<li><p>301 被请求的资源已永久移动到新位置</p></li>
+
+<li><p>302 要求客户端执行临时重定向</p></li>
+
+<li><p>304 表示资源未被修改</p></li>
+
+<li><p>401 用户没有必要的凭据</p></li>
+
+<li><p>403 服务器已经理解请求，但是拒绝执行它</p></li>
+</ul>
+
+<h4 id="cookie">Cookie</h4>
+
+<p>通常我们有两种方式给浏览器设置或获取Cookie，分别是HTTP Response Headers 中的Set-Cookie和HTTP Request Headers中的Cookie Header，以及通过JavaScript对document.cookie进行赋值或取值。</p>
+
+<h4 id="安全相关的http响应头">安全相关的HTTP响应头</h4>
+
+<p><strong>Strict-Transport-Security</strong></p>
+
+<p>支持HSTS的浏览器遇到这个响应头，会把当前网站加入HSTS列表，然后再max-age指定的秒数内。当前网站所有请求都会被重定向为https。</p>
+
+<p><strong>X-Frame-Options</strong></p>
+
+<p>是为了减少劫持二引入的一个响应头</p>
+
+<p>这个响应头支持三种配置：</p>
+
+<ul>
+<li>DENY：不允许被任何页面嵌入</li>
+<li>SAMEORIGN：不允许被本域以外的页面嵌入</li>
+<li>ALLOW-FROM uri：不允许被指定的域名以外的页面嵌入</li>
+</ul>
+
+<p><strong>X-XSS-Protection</strong></p>
+
+<p>这个响应头是用来防范XSS的。它有集中配置：</p>
+
+<ul>
+<li>0：禁用XSS保护</li>
+<li>1：启用XSS保护</li>
+<li>1；mode=block：启用XSS保护，并在检查到XSS攻击时，停止渲染页面。</li>
+</ul>
+
+<p><strong>X-Content-Type-Options</strong></p>
+
+<h4 id="transfer-encoding">Transfer-Encoding</h4>
+
+<p>Transfer-Encoding 是一个HTTP头部字段，字面意思是传输编码。实际上，HTTP协议中还有另外一个头部与编码相关：Content-Encode（内容编码）。Transfer-Encoding则是用来改变报文格式。</p>
+
+<p><strong>Persistent Connection（长连接）</strong></p>
+
+<p>HTTP 1.0的持久连接机智是后来才引入的，通过Connection：keep-alive这个头部实现，服务端和客户端都可以使用它告诉对方在发送完数据后不要断开TCP连接。</p>
+
+<p>HTTP 1.1 则规定所有连接都必须是持久的，除非显示的在头部加上Connection：close。所以实际上，HTTP1.1中Connection这个头部字段已经没有keep-alive这个取值了。</p>
+
+<p>对于非持久连接，浏览器可以通过连接是否关闭来界定请求或响应实体的边界；而对于持久连接，这种方法显然不奏效。</p>
+
+<p><strong>Content-Length</strong></p>
+
+<p>要解决这个问题，最容易想到的办法就是计算实体长度。并通过头部告诉对方。如果长度不一致，如果Content-length长度比实际长度短，会造成内容被截断；如果比实体内容长，会造成pending。</p>
+
+<p><strong>Transfer-Encoding：chunked</strong></p>
+
+<p>头部加入了Transfer-Encoding:chunked后，就代表这个报文采用了分块编码。最后一个分块长度必须为0，对应分块数据没有内容，表示实体结束。</p>
+
+<p>前面说过Content-Encoding和Transfer-Encoding二者经常会结合来用，其实就是针对Transfer-Encoding的分块再进行Content-Encoding。</p>
+
+<h4 id="accept-encoding-content-encode">Accept-Encoding/Content-Encode</h4>
+
+<p>工作机制：通过Accept-Encoding带上自己支持的编码格式列表；服务端从中调选一种用来进行文本编码，并通过Content-Encoding指明选定的格式。</p>
+
+<h4 id="用户ip">用户IP</h4>
+
+<ul>
+<li>直接对外提供服务的web应用，在进行与安全相关的操作时，只能通过Remote Address获取真实ip。</li>
+<li>使用Nginx等Web Server进行反向代理的web应用，在配置正确的前提下，要用X-Forwarded-For最后一节或X-Real-IP来获取IP（因为RemoteAddress得到的IP是nginx所在的服务器的IP）；</li>
+</ul>
+
+<p><strong>X-Forwarded-For</strong></p>
+
+<p>用来表示请求的真实ip</p>
+
+<pre><code class="language-text">X-Forwarded-For: client, proxy1, proxy2
+</code></pre>
+
+<p><strong>X-Real-IP</strong></p>
+
+<p>产生TCP连接的设备</p>
+
+<p><strong>Remote Address</strong></p>
+
+<p>通过 Nginx 访问 Node.js 服务，得到的 Remote Address 实际上是 Nginx 的本地 IP。</p>
+
+<h4 id="vary">Vary</h4>
+
+<p>Vary用来列出一个相应字段列表，告诉缓存服务器遇到同一个URL对应不同版本文档的时候，如何缓存和筛选合适的版本。</p>
+
+<h4 id="sse">SSE</h4>
+
+<p>我们知道HTTP只能由客户端发起连接，在由服务期响应，SSE也是这样，只不过服务端会保持这个链接，多次发送相应。</p>
+
+<h4 id="ws-websocket">WS（Websocket）</h4>
+
+<p>Websocket是基于TCP实现的，HTTP协议中的那些概念都不复存在。但他还是依赖于HTTP，因为Websocket的握手阶段利用了HTTP的Upgrade机制。一旦握手完成，后续数据传输就直接在TCP上完成。</p>
+
+<h4 id="从nginx默认不压缩http1-0说起">从nginx默认不压缩http1.0说起</h4>
+
+<p>对于TCP持久连接的HTTP报文，客户端需要一种机制来准确判断结束位置。而在HTTP1.0中，这种机制只有Content-length。于是，对于本文前面提出的情况，HTTP只能要么不压缩，要么不启用持久连接（对于非持久连接，TCP断开就可以认为HTTP报文结束），而nginx默认选择前者。</p>
+
+<h4 id="简述get和post区别">简述GET和POST区别</h4>
+
+<ul>
+<li>从原理上看
+
+<ul>
+<li>根据http规范，GET用于信息获取，而且应该是安全和幂等的</li>
+<li>根据http规范，POST请求用于表示可能修改服务器上资源的请求</li>
+</ul></li>
+<li>从表面上看
+
+<ul>
+<li>GET请求的数据会附在URL后面，POST的数据放在HTTP包体</li>
+<li>POST安全性比GET安全性高</li>
+</ul></li>
+</ul>
+
+<h3 id="https">HTTPS</h3>
+
+<p>屈光宇</p>
+
+<h4 id="主要功能">主要功能</h4>
+
+<ul>
+<li>内容加密</li>
+<li>身份认证</li>
+<li>数据完整性</li>
+</ul>
+
+<h4 id="对称加密">对称加密</h4>
+
+<p>对称加密有点是强度非常高，难破解。缺点是无法安全的生成和保存密钥，需要管理海量密钥</p>
+
+<h4 id="非对称加密">非对称加密</h4>
+
+<p>非对称加密主要用于密钥交换。</p>
+
+<p><strong>缺点</strong></p>
+
+<ul>
+<li>CPU计算资源消耗非常大。一次完全的TLS握手，密钥交换时的非对称解密计算量占整个握手过程的90%以上。而对称加密的计算量只相当于非对称加密的0.1%。</li>
+<li>非对称加密对加密内容的长度有限制，不能超过公钥长度。</li>
+</ul>
+
+<p><strong>算法</strong></p>
+
+<ul>
+<li>RSA：算法实现简单，诞生于1977年。安全性高。缺点就是需要比较大的素数来保证安全强度，很消耗CPU，RSA是目前唯一一个既能用户密钥交换又能用于证书签名的算法</li>
+<li>DH：diffie-hellman 诞生于1977年，但是1999年才公开，缺点是比较消耗CPU性能。</li>
+<li>ECDHE：使用椭圆曲线（ECC）的DH算法，有点是能用较小的素数（256位）实现RSA相同的安全等级。缺点是算法实现复杂，用于密钥交换的历史不长。</li>
+<li>ECDH：不支持PFS</li>
+<li>DHE：不支持ECC。非常消耗CPU资源。</li>
+</ul>
+
+<h4 id="false-start">False Start</h4>
+
+<p>False Start 有抢跑的意思，意味着不按规则行事。TLS False Start 是指客户端在发送Change Cipher Spec Finished同事发送应用数据，服务端在TLS握手完成时直接返回应用数据。</p>
+
+<h4 id="证书链">证书链</h4>
+
+<p>配置证书链的最佳实践是只包含站点证书和中间证书，不要包含根证书，也不要漏掉中间证书。大部分站点证书链都是“站点证书-中间证书-根证书”这样三级，这时服务器端只需要发送前两个证书即可。但也有的证书链又四级，那就需要发送站点证书外加两个中间证书了。</p>
+
+<h4 id="ecc-certificate">ECC certificate</h4>
+
+<p>如果需要进一步减小证书大小，可以选择ECC证书。256位的ECC key等同于3072位的RSA key，在确保安全性的同时，体积大幅减小。</p>
+
+<p>ECC证书这么好，为什么没有普及呢？最主要的原因是他的支持情况并不好。所以，确定使用ECC证书前需要明确用户分布情况。</p>
+
+<h3 id="http-2">HTTP 2</h3>
+
+<h3 id="tcp-ip">TCP/IP</h3>
+
+<h4 id="wait">-WAIT</h4>
+
+<p><strong>TIME-WAIT存在的主要原因有两点</strong></p>
+
+<blockquote>
+<p><a href="http://blog.csdn.net/slvher/article/details/8941873">http://blog.csdn.net/slvher/article/details/8941873</a></p>
+
+<p><a href="http://blog.csdn.net/whuslei/article/details/6667471">http://blog.csdn.net/whuslei/article/details/6667471</a></p>
+</blockquote>
+
+<ol>
+<li>为实现TCP这种全双工（full-duplex）连接的可靠释放</li>
+</ol>
+
+<p>参考本文前面给出的TCP释放连接4次挥手示意图，假设发起active close的一方（图中为client）发送的ACK（4次交互的最后一个包）在网络中丢失，那么由于TCP的重传机制，执行passiveclose的一方（图中为server）需要重发其FIN，在该FIN到达client（client是active close发起方）之前，client必须维护这条连接的状态（尽管它已调用过close），具体而言，就是这条TCP连接对应的（local_ip, local_port）资源不能被立即释放或重新分配。直到romete peer重发的FIN达到，client也重发ACK后，该TCP连接才能恢复初始的CLOSED状态。<strong>如果activeclose方不进入TIME_WAIT以维护其连接状态，则当passive close方重发的FIN达到时，active close方的TCP传输层会以RST包响应对方，这会被对方认为有错误发生（而事实上，这是正常的关闭连接过程，并非异常）。</strong></p>
+
+<ol>
+<li>为使旧的数据包在网络因过期而消失</li>
+</ol>
+
+<p>为说明这个问题，我们先假设TCP协议中不存在TIME_WAIT状态的限制，再假设当前有一条TCP连接：(local_ip, local_port, remote_ip,remote_port)，因某些原因，我们先关闭，接着很快以相同的四元组建立一条新连接。本文前面介绍过，TCP连接由四元组唯一标识，因此，在我们假设的情况中，TCP协议栈是无法区分前后两条TCP连接的不同的，在它看来，这根本就是同一条连接，中间先释放再建立的过程对其来说是“感知”不到的。这样就可能发生这样的情况：前一条TCP连接由local peer发送的数据到达remote peer后，会被该remot peer的TCP传输层当做当前TCP连接的正常数据接收并向上传递至应用层（而事实上，在我们假设的场景下，这些旧数据到达remote peer前，旧连接已断开且一条由相同四元组构成的新TCP连接已建立，因此，这些旧数据是不应该被向上传递至应用层的），从而引起数据错乱进而导致各种无法预知的诡异现象。作为一种可靠的传输协议，TCP必须在协议层面考虑并避免这种情况的发生，这正是TIME_WAIT状态存在的第2个原因。<br />
+   具体而言，local peer主动调用close后，此时的TCP连接进入TIME_WAIT状态，处于该状态下的TCP连接不能立即以同样的四元组建立新连接，即发起active close的那方占用的local port在TIME_WAIT期间不能再被重新分配。由于TIME_WAIT状态持续时间为2MSL，这样保证了旧TCP连接双工链路中的旧数据包均因过期（超过MSL）而消失，此后，就可以用相同的四元组建立一条新连接而不会发生前后两次连接数据错乱的情况。</p>
+
+<p>​</p>
+
+<h4 id="common-sense">Common Sense</h4>
+
+<ul>
+<li>TCP和UDP的区别
+
+<ul>
+<li>TCP面向连接，UDP面向非连接</li>
+<li>TCP提供可靠的服务，UDP无法保证</li>
+<li>TCP面向字节流，UDP面向报文</li>
+<li>TCP传输数据慢，UDP数据传输快</li>
+</ul></li>
+<li>TCP三次握手
+
+<ul>
+<li>第一次握手，客户端发送连接请求报文段，将SYN位置为1，sequence number为x，然后客户端进入SYN_SEND状态，等待服务器确认</li>
+<li>第二次握手，服务端收到客户端的SYN报文段，需要对这个SYN报文段进行确认，设置Acknowledgment Number为x＋1；同时，自己还要发送SYN请求信息，将SYN位置为1，Sequence Number为y，服务端将上述所有信息昂岛一个报文段（SYN＋ACK报文）中，一并发送给客户端，此时服务端进入SYN_RECV状态。</li>
+<li>第三次握手，客户端收到SYN_ACK报文段。然后将Acknowledgment Number设置为y+1，向服务端发送ACK报文段，这个报文段发送完毕之后，客户端和服务端都进入ESTANBLISHED状态，完成TCP三次握手</li>
+</ul></li>
+<li>图解三次握手和三次挥手</li>
+</ul>
+
+<p><img src=".gitbook/assets/0_131271823564rx.png" alt="img" /></p>
+
+<h4 id="慢启动">慢启动</h4>
+
+<p>The sender starts by transmitting one segment and waiting for its ACK. When that ACK is received, the congestion window is incremented from one to two, and two segments can be sent. When each of those two segments is acknowledged, the congestion window is increased to four. This provides an exponential growth, although it is not exactly exponential because the receiver may delay its ACKs, typically sending one ACK for every two segments that it receives.</p>
+
+<p>The sender can transmit up to the minimum of the congestion window and the advertised window. The congestion window is flow control imposed by the sender, while the advertised window is flow control imposed bythe receiver.</p>
+
+<blockquote>
+<p>maxcdn：<a href="https://www.maxcdn.com/one/visual-glossary/tcp-slow-start/">https://www.maxcdn.com/one/visual-glossary/tcp-slow-start/</a></p>
+
+<p>rfc文档：<a href="https://tools.ietf.org/html/rfc2001">https://tools.ietf.org/html/rfc2001</a></p>
+</blockquote>
+
+<h4 id="拥塞避免">拥塞避免</h4>
+
+<p>If cwnd is less than or equal to ssthresh, TCP is in slow start; otherwise TCP is performing congestion avoidance.</p>
+
+<p>Slow start has cwnd begin at one segment, and be incremented byone segment every time an ACK is received. As mentioned earlier,this opens the window exponentially: send one segment, then two,then four, and so on. Congestion avoidance dictates that cwnd beincremented by segsize*segsize/cwnd each time an ACK is received,where segsize is the segment size and cwnd is maintained in bytes.This is a linear growth of cwnd, compared to slow start&rsquo;sexponential growth. The increase in cwnd should be at most onesegment each round-trip time (regardless how many ACKs arereceived in that RTT), whereas slow start increments cwnd by thenumber of ACKs received in a round-trip time.</p>
+
+<h4 id="快速重传">快速重传</h4>
+
+<p>快重传算法还规定，发送方只要一连收到三个重复确认就应当立即重传对方尚未收到的报文段M3，而不必继续等待M3设置的重传计时器到期。由于发送方尽早重传未被确认的报文段，因此采用快重传后可以使整个网络吞吐量提高约20%。</p>
+
+<h4 id="快速恢复">快速恢复</h4>
+
+<p>快重传配合使用的还有快恢复算法，其过程有以下两个要点：</p>
+
+<ul>
+<li>当发送方连续收到三个重复确认，就执行“乘法减小”算法，把慢开始门限ssthresh减半。这是为了预防网络发生拥塞。请注意：接下去不执行慢开始算法。</li>
+<li>由于发送方现在认为网络很可能没有发生拥塞，因此与慢开始不同之处是现在不执行慢开始算法（即拥塞窗口cwnd现在不设置为1），而是把cwnd值设置为慢开始门限ssthresh减半后的数值，然后开始执行拥塞避免算法（“加法增大”），使拥塞窗口缓慢地线性增大。</li>
+</ul>
+
+<p>也有的快重传实现是把开始时的拥塞窗口cwnd值再增大一点，即等于 ssthresh + 3 X MSS 。这样做的理由是：既然发送方收到三个重复的确认，就表明有三个分组已经离开了网络。这三个分组不再消耗网络 的资源而是停留在接收方的缓存中。可见现在网络中并不是堆积了分组而是减少了三个分组。因此可以适当把拥塞窗口扩大了些。</p>
+
+  </div>
+
+  
+  
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">petrie</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">0001-01-01</span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+  
+  
+</article>
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+  
+    
+
+
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+  
+    <a href="mailto:lpfvip2008@gmail.com" rel="me noopener" class="iconfont"
+      title="email" >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/Petrie" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="http://petrie.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2015 -
+    2020
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        petrie
+        
+      </span></span>
+
+  
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Petrie&#39;s Home</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="petrie" />
+  <meta name="description" content="数据库 缓存架构 进程内缓存
+到底选Redis还是Memcache，看看源码怎么说
+ 什么时候倾向于选择Redis  复杂数据结构 持久化：mc无法满足持久化的需求，只得选择redis 天然高可用：支持主从 存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。  什么时候倾向于选择memcache  纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。   如何应对潜在的雪崩？
+ 常见方案一：高可用缓存 常见方案二：缓存水平切分 db限流 快速失败  究竟先操作缓存，还是数据库？
+ 读请求，先读缓存，如果没有命中，读数据库，再set回缓存 写请求  先缓存，再数据库 缓存，使用delete，而不是set   Cache Aside Pattern（旁路缓存模式）
+ 对于读请求  先读cache，再读db 如果，cache hit，则直接返回数据 如果，cache miss，则访问db，并将数据set回缓存  对于写请求  淘汰缓存，而不是更新缓存 先操作数据库，再淘汰缓存  Cache Aside Pattern方案存在什么问题？  如果先操作数据库，再淘汰缓存，在原子性被破坏时：
+ 修改数据库成功了 淘汰缓存失败了  导致，数据库与缓存的数据不一致。
+数据库主从不一致，怎么解？
+数据库主库和从库不一致，常见有这么几种优化方案：
+ 业务可以接受，系统不优化 强制读主，高可用主库，用缓存提高读性能 在cache里记录哪些记录发生过写请求，来路由读主还是读从  数据库 概论  redis、memcache、mongoDB 对比" />
+
+  <meta name="keywords" content="Petrie, golang, php, swoole" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.54-DEV" />
+
+
+<link rel="canonical" href="http://petrie.github.io/notes/shu-ju-ku/" />
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.c8c1ff75dee09b44060a6c38f41b9036bac2512ccdb22d7f296cec12dc786375.css" integrity="sha256-yMH/dd7gm0QGCmw49BuQNrrCUSzNsi1/KWzsEtx4Y3U=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="数据库 缓存架构 进程内缓存
+到底选Redis还是Memcache，看看源码怎么说
+ 什么时候倾向于选择Redis  复杂数据结构 持久化：mc无法满足持久化的需求，只得选择redis 天然高可用：支持主从 存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。  什么时候倾向于选择memcache  纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。   如何应对潜在的雪崩？
+ 常见方案一：高可用缓存 常见方案二：缓存水平切分 db限流 快速失败  究竟先操作缓存，还是数据库？
+ 读请求，先读缓存，如果没有命中，读数据库，再set回缓存 写请求  先缓存，再数据库 缓存，使用delete，而不是set   Cache Aside Pattern（旁路缓存模式）
+ 对于读请求  先读cache，再读db 如果，cache hit，则直接返回数据 如果，cache miss，则访问db，并将数据set回缓存  对于写请求  淘汰缓存，而不是更新缓存 先操作数据库，再淘汰缓存  Cache Aside Pattern方案存在什么问题？  如果先操作数据库，再淘汰缓存，在原子性被破坏时：
+ 修改数据库成功了 淘汰缓存失败了  导致，数据库与缓存的数据不一致。
+数据库主从不一致，怎么解？
+数据库主库和从库不一致，常见有这么几种优化方案：
+ 业务可以接受，系统不优化 强制读主，高可用主库，用缓存提高读性能 在cache里记录哪些记录发生过写请求，来路由读主还是读从  数据库 概论  redis、memcache、mongoDB 对比" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://petrie.github.io/notes/shu-ju-ku/" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="数据库 缓存架构 进程内缓存
+到底选Redis还是Memcache，看看源码怎么说
+ 什么时候倾向于选择Redis  复杂数据结构 持久化：mc无法满足持久化的需求，只得选择redis 天然高可用：支持主从 存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。  什么时候倾向于选择memcache  纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。   如何应对潜在的雪崩？
+ 常见方案一：高可用缓存 常见方案二：缓存水平切分 db限流 快速失败  究竟先操作缓存，还是数据库？
+ 读请求，先读缓存，如果没有命中，读数据库，再set回缓存 写请求  先缓存，再数据库 缓存，使用delete，而不是set   Cache Aside Pattern（旁路缓存模式）
+ 对于读请求  先读cache，再读db 如果，cache hit，则直接返回数据 如果，cache miss，则访问db，并将数据set回缓存  对于写请求  淘汰缓存，而不是更新缓存 先操作数据库，再淘汰缓存  Cache Aside Pattern方案存在什么问题？  如果先操作数据库，再淘汰缓存，在原子性被破坏时：
+ 修改数据库成功了 淘汰缓存失败了  导致，数据库与缓存的数据不一致。
+数据库主从不一致，怎么解？
+数据库主库和从库不一致，常见有这么几种优化方案：
+ 业务可以接受，系统不优化 强制读主，高可用主库，用缓存提高读性能 在cache里记录哪些记录发生过写请求，来路由读主还是读从  数据库 概论  redis、memcache、mongoDB 对比">
+
+
+
+<meta itemprop="wordCount" content="1128">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="数据库 缓存架构 进程内缓存
+到底选Redis还是Memcache，看看源码怎么说
+ 什么时候倾向于选择Redis  复杂数据结构 持久化：mc无法满足持久化的需求，只得选择redis 天然高可用：支持主从 存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。  什么时候倾向于选择memcache  纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。   如何应对潜在的雪崩？
+ 常见方案一：高可用缓存 常见方案二：缓存水平切分 db限流 快速失败  究竟先操作缓存，还是数据库？
+ 读请求，先读缓存，如果没有命中，读数据库，再set回缓存 写请求  先缓存，再数据库 缓存，使用delete，而不是set   Cache Aside Pattern（旁路缓存模式）
+ 对于读请求  先读cache，再读db 如果，cache hit，则直接返回数据 如果，cache miss，则访问db，并将数据set回缓存  对于写请求  淘汰缓存，而不是更新缓存 先操作数据库，再淘汰缓存  Cache Aside Pattern方案存在什么问题？  如果先操作数据库，再淘汰缓存，在原子性被破坏时：
+ 修改数据库成功了 淘汰缓存失败了  导致，数据库与缓存的数据不一致。
+数据库主从不一致，怎么解？
+数据库主库和从库不一致，常见有这么几种优化方案：
+ 业务可以接受，系统不优化 强制读主，高可用主库，用缓存提高读性能 在cache里记录哪些记录发生过写请求，来路由读主还是读从  数据库 概论  redis、memcache、mongoDB 对比"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Petrie</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Petrie
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+  
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+    
+    <div class="post-meta">
+      <time datetime="0001-01-01" class="post-time">
+        0001-01-01
+      </time>
+    </div>
+  </header>
+
+  
+  
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#数据库">数据库</a>
+<ul>
+<li><a href="#缓存架构">缓存架构</a></li>
+<li><a href="#数据库-1">数据库</a>
+<ul>
+<li><a href="#概论">概论</a></li>
+<li><a href="#mongodb">Mongodb</a></li>
+<li><a href="#mysql">MySQL</a>
+<ul>
+<li><a href="#索引">索引</a></li>
+<li><a href="#性能优化">性能优化</a></li>
+<li><a href="#mvcc">MVCC</a></li>
+<li><a href="#排它锁和共享锁">排它锁和共享锁</a></li>
+<li><a href="#事务">事务</a></li>
+<li><a href="#acid">ACID</a></li>
+<li><a href="#隔离级别">隔离级别</a></li>
+<li><a href="#存储引擎">存储引擎</a></li>
+<li><a href="#myisam与innodb索引的区别">MyISAM与InnoDB索引的区别####</a></li>
+<li><a href="#innodb的primary-index-和-secondary-index有何区别">InnoDB的Primary Index 和 secondary Index有何区别？####</a></li>
+<li><a href="#int-4-vs-int-11">int(4) vs int(11)</a></li>
+<li><a href="#varchar-vs-char">varchar vs char</a></li>
+<li><a href="#delete-truncate">DELETE TRUNCATE</a></li>
+<li><a href="#float-double">float double</a></li>
+<li><a href="#varchar-n-可以存储几个中文">varchar(n) 可以存储几个中文</a></li>
+</ul></li>
+<li><a href="#redis">Redis</a>
+<ul>
+<li><a href="#复制">复制</a></li>
+<li><a href="#数据一致性">数据一致性</a></li>
+<li><a href="#数据持久化">数据持久化</a></li>
+<li><a href="#数据结构">数据结构</a></li>
+<li><a href="#配置">配置</a></li>
+<li><a href="#高级配置">高级配置</a></li>
+</ul></li>
+<li><a href="#codis">codis</a></li>
+<li><a href="#predis">Predis</a></li>
+<li><a href="#memcache">memcache</a>
+<ul>
+<li><a href="#cas">cas</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#swoole">swoole</a>
+<ul>
+<li><a href="#异步mysql">异步mysql</a></li>
+</ul></li>
+<li><a href="#zookeeper">zookeeper</a>
+<ul>
+<li><a href="#部署架构图">部署架构图</a></li>
+</ul></li>
+<li><a href="#mapreduce">MapReduce</a></li>
+<li><a href="#消息队列">消息队列</a>
+<ul>
+<li><a href="#kafka">Kafka</a>
+<ul>
+<li><a href="#设计目标">设计目标</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#lvs">LVS</a></li>
+<li><a href="#安全">安全</a>
+<ul>
+<li><a href="#sql注入">sql注入</a></li>
+<li><a href="#xss">xss</a></li>
+</ul></li>
+<li><a href="#rpc调用">RPC调用</a>
+<ul>
+<li><a href="#thrift">thrift</a></li>
+</ul></li>
+<li><a href="#加密算法">加密算法</a>
+<ul>
+<li><a href="#基本概念">基本概念</a>
+<ul>
+<li><a href="#des加密算法">DES加密算法</a></li>
+<li><a href="#aes加密算法">AES加密算法</a></li>
+<li><a href="#rsa加密算法">RSA加密算法</a></li>
+<li><a href="#base64加密算法">base64加密算法</a></li>
+<li><a href="#md5加密算法">MD5加密算法</a></li>
+<li><a href="#sha1加密算法">SHA1加密算法</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#字符编码-字符集">字符编码&amp;字符集</a>
+<ul>
+<li><a href="#字符集">字符集</a></li>
+<li><a href="#字符编码">字符编码</a></li>
+<li><a href="#utf-8和unicode的关系">UTF-8和Unicode的关系</a></li>
+<li><a href="#utf-8编码简介">UTF-8编码简介</a></li>
+</ul></li>
+<li><a href="#工作内容">工作内容</a>
+<ul>
+<li><a href="#任务发布">任务发布</a></li>
+</ul></li>
+<li><a href="#微信红包">微信红包</a>
+<ul>
+<li><a href="#微信红包两大业务特点">微信红包两大业务特点</a></li>
+<li><a href="#微信红包技术难点">微信红包技术难点</a></li>
+<li><a href="#解决高并发问题通常使用的方案">解决高并发问题通常使用的方案</a></li>
+<li><a href="#微信红包系统的高并发解决方案">微信红包系统的高并发解决方案</a></li>
+</ul></li>
+<li><a href="#分布式事务">分布式事务</a></li>
+<li><a href="#前言">前言##</a>
+<ul>
+<li>
+<ul>
+<li><a href="#2pc-又称两阶段提交">2pc，又称两阶段提交</a></li>
+<li><a href="#3pc-又称三阶段提交-2pc的升级版">3pc，又称三阶段提交，2pc的升级版</a></li>
+</ul></li>
+<li><a href="#paxos">PAXOS</a></li>
+</ul></li>
+<li><a href="#其他">其他</a>
+<ul>
+<li><a href="#微信序列号生成器架构设计及演变">微信序列号生成器架构设计及演变</a>
+<ul>
+<li><a href="#配置开发机以让外网访问">配置开发机以让外网访问</a></li>
+<li><a href="#你有哪些得意之作">你有哪些得意之作</a></li>
+<li><a href="#如何做测试">如何做测试</a></li>
+<li><a href="#接触到的mysql数据库表最大是多少行记录">接触到的Mysql数据库表最大是多少行记录?</a></li>
+<li><a href="#出现性能瓶颈怎么解决">出现性能瓶颈怎么解决？</a></li>
+<li><a href="#学习一个新框架如何入手">学习一个新框架如何入手?</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#人力问题">人力问题</a>
+<ul>
+<li>
+<ul>
+<li><a href="#你最大的缺点是什么">你最大的缺点是什么</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#目标公司">目标公司</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+
+  
+  <div class="post-content">
+      
+
+<h1 id="数据库">数据库</h1>
+
+<h2 id="缓存架构">缓存架构</h2>
+
+<p><strong>进程内缓存</strong></p>
+
+<p><strong>到底选Redis还是Memcache，看看源码怎么说</strong></p>
+
+<ul>
+<li>什么时候倾向于选择Redis
+
+<ul>
+<li>复杂数据结构</li>
+<li>持久化：mc无法满足持久化的需求，只得选择redis</li>
+<li>天然高可用：支持主从</li>
+<li>存储的内容比较大：memcache的value存储，最大为1M，如果存储的value很大，只能使用redis。</li>
+</ul></li>
+<li>什么时候倾向于选择memcache
+
+<ul>
+<li>纯KV，数据量非常大，并发量非常大的业务，使用memcache或许更适合。</li>
+</ul></li>
+</ul>
+
+<p><strong>如何应对潜在的雪崩？</strong></p>
+
+<ul>
+<li>常见方案一：高可用缓存</li>
+<li>常见方案二：缓存水平切分</li>
+<li>db限流</li>
+<li>快速失败</li>
+</ul>
+
+<p><strong>究竟先操作缓存，还是数据库？</strong></p>
+
+<ul>
+<li>读请求，先读缓存，如果没有命中，读数据库，再set回缓存</li>
+<li>写请求
+
+<ul>
+<li>先缓存，再数据库</li>
+<li>缓存，使用delete，而不是set</li>
+</ul></li>
+</ul>
+
+<p><strong>Cache Aside Pattern（旁路缓存模式）</strong></p>
+
+<ul>
+<li>对于读请求
+
+<ul>
+<li>先读cache，再读db</li>
+<li>如果，cache hit，则直接返回数据</li>
+<li>如果，cache miss，则访问db，并将数据set回缓存</li>
+</ul></li>
+<li>对于写请求
+
+<ul>
+<li>淘汰缓存，而不是更新缓存</li>
+<li>先操作数据库，再淘汰缓存</li>
+</ul></li>
+<li>Cache Aside Pattern方案存在什么问题？</li>
+</ul>
+
+<p>如果先操作数据库，再淘汰缓存，在原子性被破坏时：</p>
+
+<ul>
+<li>修改数据库成功了</li>
+<li>淘汰缓存失败了</li>
+</ul>
+
+<p>导致，数据库与缓存的数据不一致。</p>
+
+<p><strong>数据库主从不一致，怎么解？</strong></p>
+
+<p>数据库主库和从库不一致，常见有这么几种优化方案：</p>
+
+<ul>
+<li>业务可以接受，系统不优化</li>
+<li>强制读主，高可用主库，用缓存提高读性能</li>
+<li>在cache里记录哪些记录发生过写请求，来路由读主还是读从</li>
+</ul>
+
+<h2 id="数据库-1">数据库</h2>
+
+<h3 id="概论">概论</h3>
+
+<ul>
+<li><p>redis、memcache、mongoDB 对比</p>
+
+<ul>
+<li>操作的便利性</li>
+</ul>
+
+<p>memcache数据结构单一</p>
+
+<p>redis丰富一些，数据操作方面，redis更好一些，较少的网络IO次数</p>
+
+<p>mongodb支持丰富的数据表达，索引，最类似关系型数据库，支持的查询语言非常丰富</p></li>
+</ul>
+
+<p>​</p>
+
+<h3 id="mongodb">Mongodb</h3>
+
+<h3 id="mysql">MySQL</h3>
+
+<h4 id="索引">索引</h4>
+
+<ul>
+<li>索引基数：唯一值越多，基数越大，越有可能选择这个索引</li>
+</ul>
+
+<h4 id="性能优化">性能优化</h4>
+
+<p><strong>慢查询</strong></p>
+
+<p><strong>查询缓存</strong></p>
+
+<table>
+<thead>
+<tr>
+<th align="left">变量名</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td align="left">Qcache_free_blocks</td>
+<td align="left">缓存中相邻内存块的个数。数目大说明可能有碎片。FLUSH QUERY CACHE 会对缓存中的碎片进行整理，从而得到一个空闲块。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_free_memory</td>
+<td align="left">缓存中的空闲内存。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_hits</td>
+<td align="left">每次查询在缓存中命中时就增大。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_inserts</td>
+<td align="left">每次插入一个查询时就增大。命中次数除以插入次数就是不中比率；用 1 减去这个值就是命中率。在上面这个例子中，大约有 87% 的查询都在缓存中命</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_lowmem_prunes</td>
+<td align="left">缓存出现内存不足并且必须要进行清理以便为更多查询提供空间的次数。这个数字最好长时间来看；如果这个数字在不断增长，就表示可能碎片非常严重，或者内存很少。（上面的 free_blocks 和free_memory 可以告诉您属于哪种情况）。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_not_cached</td>
+<td align="left">不适合进行缓存的查询的数量，通常是由于这些查询不是 SELECT 语句。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_queries_in_cache</td>
+<td align="left">当前缓存的查询（和响应）的数量。</td>
+</tr>
+
+<tr>
+<td align="left">Qcache_total_blocks</td>
+<td align="left">缓存中块的数量。</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>缓冲区和缓存</strong></p>
+
+<ul>
+<li><p>服务端的设置</p>
+
+<ul>
+<li>显示打开表的活动</li>
+</ul></li>
+</ul>
+
+<pre><code class="language-text">  mysql&gt; SHOW STATUS LIKE 'open%tables';
+  +---------------+-------+
+  | Variable_name | Value |
+  +---------------+-------+
+  | Open_tables   | 5000  |
+  | Opened_tables | 195   |
+  +---------------+-------+
+  2 rows in set (0.00 sec)
+</code></pre>
+
+<ul>
+<li>显示线程使用统计信息</li>
+</ul>
+
+<pre><code class="language-text">  mysql&gt; SHOW STATUS LIKE 'threads%';
+  +-------------------+--------+
+  | Variable_name     | Value  |
+  +-------------------+--------+
+  | Threads_cached    | 27     |
+  | Threads_connected | 15     |
+  | Threads_created   | 838610 |
+  | Threads_running   | 3      |
+  +-------------------+--------+
+  4 rows in set (0.00 sec)
+</code></pre>
+
+<ul>
+<li>确定关键字效率</li>
+</ul>
+
+<pre><code class="language-text">  mysql&gt; show status like '%key_read%';
+  +-------------------+-----------+
+  | Variable_name     | Value     |
+  +-------------------+-----------+
+  | Key_read_requests | 163554268 |
+  | Key_reads         | 98247     |
+  +-------------------+-----------+
+  2 rows in set (0.00 sec)
+</code></pre>
+
+<ul>
+<li>确定临时表的使用</li>
+</ul>
+
+<pre><code class="language-text">  mysql&gt; SHOW STATUS LIKE 'created_tmp%';
+  +-------------------------+-------+
+  | Variable_name           | Value |
+  +-------------------------+-------+
+  | Created_tmp_disk_tables | 30660 |
+  | Created_tmp_files       | 2     |
+  | Created_tmp_tables      | 32912 |
+  +-------------------------+-------+
+  3 rows in set (0.00 sec)
+</code></pre>
+
+<ul>
+<li><p>每个会话的设置</p>
+
+<ul>
+<li><strong>显示排序统计信息</strong></li>
+</ul>
+
+<pre><code class="language-text">mysql&gt; SHOW STATUS LIKE &quot;sort%&quot;;
++-------------------+---------+
+| Variable_name     | Value   |
++-------------------+---------+
+| Sort_merge_passes | 1       |
+| Sort_range        | 79192   |
+| Sort_rows         | 2066532 |
+| Sort_scan         | 44006   |
++-------------------+---------+
+4 rows in set (0.00 sec)
+</code></pre>
+
+<ul>
+<li>确定表扫描比率</li>
+</ul>
+
+<pre><code class="language-text">mysql&gt; SHOW STATUS LIKE &quot;com_select&quot;;
++---------------+--------+
+| Variable_name | Value  |
++---------------+--------+
+| Com_select    | 318243 |
++---------------+--------+
+1 row in set (0.00 sec)
+
+mysql&gt; SHOW STATUS LIKE &quot;handler_read_rnd_next&quot;;
++-----------------------+-----------+
+| Variable_name         | Value     |
++-----------------------+-----------+
+| Handler_read_rnd_next | 165959471 |
++-----------------------+-----------+
+1 row in set (0.00 sec)
+</code></pre></li>
+</ul>
+
+<h4 id="mvcc">MVCC</h4>
+
+<blockquote>
+<p><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-multi-versioning.html">https://dev.mysql.com/doc/refman/5.7/en/innodb-multi-versioning.html</a></p>
+</blockquote>
+
+<p><strong>mysql三个隐藏的key</strong></p>
+
+<ul>
+<li>一个6字节的DB_TRX_ID指示最后一个插入或更新当前行的事务</li>
+<li>1个字节用来标记当前行时候被删除</li>
+<li>一个7字节的DB_ROLL_PTR回滚指针，指向undo log</li>
+</ul>
+
+<h4 id="排它锁和共享锁">排它锁和共享锁</h4>
+
+<p>排他锁、共享锁。共享锁针对读，排他锁针对写，完全等同读写锁的概念。如果某个事务在更新某行（排他锁），则其他事物无论是读还是写本行都必须等待；如果某个事物读某行（共享锁），则其他读的事物无需等待，而写事物则需等待。</p>
+
+<h4 id="事务">事务</h4>
+
+<blockquote>
+<p><a href="https://amao12580.github.io/post/2016/06/What-is-a-transaction/">https://amao12580.github.io/post/2016/06/What-is-a-transaction/</a></p>
+
+<p><a href="http://tech.meituan.com/innodb-lock.html">http://tech.meituan.com/innodb-lock.html</a></p>
+
+<p><a href="http://hedengcheng.com/?p=148">http://hedengcheng.com/?p=148</a></p>
+</blockquote>
+
+<h4 id="acid">ACID</h4>
+
+<h4 id="隔离级别">隔离级别</h4>
+
+<table>
+<thead>
+<tr>
+<th align="left">隔离级别</th>
+<th align="left">脏读</th>
+<th align="left">不可重复读</th>
+<th align="left">幻读</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td align="left">未提交读(Read Uncommitted)</td>
+<td align="left">可能</td>
+<td align="left">可能</td>
+<td align="left">可能</td>
+</tr>
+
+<tr>
+<td align="left">已提交读(Read Commited)</td>
+<td align="left">不可能</td>
+<td align="left">可能</td>
+<td align="left">可能</td>
+</tr>
+
+<tr>
+<td align="left">重复读 (Repeatable read)</td>
+<td align="left">不可能</td>
+<td align="left">不可能</td>
+<td align="left">可能</td>
+</tr>
+
+<tr>
+<td align="left">序列化((Serializable)</td>
+<td align="left">不可能</td>
+<td align="left">不可能</td>
+<td align="left">不可能</td>
+</tr>
+</tbody>
+</table>
+
+<ul>
+<li>脏读：当一个事务对数据进行修改但未提交事务，另外一个事务访问并使用了这个数据</li>
+<li>不可重复读：事务1，多次读取同一数据。在两次读取之间，事务2更新了此数据，事务1在两次会读到不同的数据，因此称为不可重复读。</li>
+<li>幻读：事务1对表所有数据做了更新，事务2向表中插入一条新数据。事务1后续会发现还有没更新的数据，就好像产生了幻觉一样。</li>
+</ul>
+
+<h4 id="存储引擎">存储引擎</h4>
+
+<h4 id="myisam与innodb索引的区别">MyISAM与InnoDB索引的区别####</h4>
+
+<ul>
+<li>innodb 支持行级锁，myisam只支持表索引</li>
+<li>MyISAM 支持全文索引，Innodb 直到5.6才支持</li>
+<li>Innodb实现了事务、外键。MyISAM不支持</li>
+</ul>
+
+<h4 id="innodb的primary-index-和-secondary-index有何区别">InnoDB的Primary Index 和 secondary Index有何区别？####</h4>
+
+<h4 id="int-4-vs-int-11">int(4) vs int(11)</h4>
+
+<p>The x in INT(x) has nothing to do with space requirements or any other performance issues, it&rsquo;s really just the display width. Generally setting the display widths to a reasonable value is mostly useful with the UNSIGNED ZEROFILL option.</p>
+
+<ul>
+<li>the <code>UNSIGNED ZEROFILL</code> option.</li>
+</ul>
+
+<pre><code class="language-text">  //INT(4) UNSIGNED ZEROFILL
+  0001
+  0002 
+  ...
+  0099
+  ...
+  0999
+  ...
+  9999
+  ...
+  10000
+
+  //INT(2) UNSIGNED ZEROFILL
+  01
+  02 
+  ...
+  09
+  ...
+  99
+  ...
+  100
+</code></pre>
+
+<ul>
+<li>Without the <code>UNSIGNED ZEROFILL</code> option</li>
+</ul>
+
+<pre><code class="language-text">  //INT(4)
+     1
+     2 
+  ...
+    99
+  ...
+   999
+  ...
+  9999
+  ...
+  10000
+
+  //INT(2)
+   1
+   2 
+  ...
+   9
+  ...
+  99
+  ...
+  100
+</code></pre>
+
+<h4 id="varchar-vs-char">varchar vs char</h4>
+
+<ul>
+<li>variable-length vs fixed</li>
+</ul>
+
+<p>The length of a <code>CHAR</code> column is fixed to the length that you declare when you create the table.</p>
+
+<p>Values in <code>VARCHAR</code> columns are variable-length strings.</p>
+
+<ul>
+<li>varchar 存储字符串长度</li>
+</ul>
+
+<p>In contrast to <code>CHAR</code>, <code>VARCHAR</code> values are stored as a 1-byte or 2-byte length prefix plus data.</p>
+
+<ul>
+<li>varchar trailing space</li>
+</ul>
+
+<p>If a given value is stored into the <code>CHAR(4)</code> and <code>VARCHAR(4)</code> columns, the values retrieved from the columns are not always the same because trailing spaces are removed from <code>CHAR</code> columns upon retrieval. The following example illustrates this difference:</p>
+
+<pre><code class="language-sql">mysql&gt; CREATE TABLE vc (v VARCHAR(4), c CHAR(4));
+Query OK, 0 rows affected (0.01 sec)
+
+mysql&gt; INSERT INTO vc VALUES ('ab  ', 'ab  ');
+Query OK, 1 row affected (0.00 sec)
+
+mysql&gt; SELECT CONCAT('(', v, ')'), CONCAT('(', c, ')') FROM vc;
++---------------------+---------------------+
+| CONCAT('(', v, ')') | CONCAT('(', c, ')') |
++---------------------+---------------------+
+| (ab  )              | (ab)                |
++---------------------+---------------------+
+1 row in set (0.06 sec)
+</code></pre>
+
+<h4 id="delete-truncate">DELETE TRUNCATE</h4>
+
+<p>Basically DELETE TABLE is logged operation and every row deleted is logged. Therefore the process is usually slow. TRUNCATE TABLE also deletes rows in a table but it will not log any of the rows deleted. The process is faster in comparison. TRUNCATE TABLE can be rolled back and is functionally similar to the DELETE statement using no WHERE clause.</p>
+
+<h4 id="float-double">float double</h4>
+
+<ul>
+<li>Floating point numbers are stored in FLOAT with eight place accuracy and it has four bytes.</li>
+<li>Floating point numbers are stored in DOUBLE with accuracy of 18 places and it has eight bytes.</li>
+</ul>
+
+<p>float tips</p>
+
+<blockquote>
+<p>MySQL permits a nonstandard syntax: FLOAT(M,D) or REAL(M,D) or DOUBLE PRECISION(M,D). Here, “(M,D)” means than values can be stored with up to M digits in total, of which D digits may be after the decimal point. For example, a column defined as FLOAT(7,4) will look like -999.9999 when displayed. MySQL performs rounding when storing values, so if you insert 999.00009 into a FLOAT(7,4) column, the approximate result is 999.0001.</p>
+</blockquote>
+
+<h4 id="varchar-n-可以存储几个中文">varchar(n) 可以存储几个中文</h4>
+
+<p>varchar(n) 表示n个字符，无论汉字和英文，<code>MySql</code>都能存入 <code>n</code> 个字符，仅实际字节长度有所区别。</p>
+
+<h3 id="redis">Redis</h3>
+
+<h4 id="复制">复制</h4>
+
+<blockquote>
+<p><a href="https://redis.io/topics/replication">https://redis.io/topics/replication</a></p>
+</blockquote>
+
+<h4 id="数据一致性">数据一致性</h4>
+
+<h4 id="数据持久化">数据持久化</h4>
+
+<p><strong>RDB快照</strong></p>
+
+<ol>
+<li>fork出一个子进程</li>
+<li>通过save 指令配置10分钟以内有1000次写入就生成快照</li>
+<li>rdb文件不会损坏：临时文件，通过原子操作rename</li>
+</ol>
+
+<p><strong>AOF日志</strong></p>
+
+<ol>
+<li>不记录对数据无影响的命令</li>
+<li>fork进程，遍历数据</li>
+<li>清空缓存，rename临时文件</li>
+<li>AOF可靠性设置</li>
+</ol>
+
+<pre><code class="language-text">   appendfsync no
+   appendfsync everysec 
+   appendfsync always
+</code></pre>
+
+<p>​</p>
+
+<h4 id="数据结构">数据结构</h4>
+
+<p>字符串、散列、列表、集合、有序集合、HyperLogLog</p>
+
+<h4 id="配置">配置</h4>
+
+<ul>
+<li>daemonize no 默认情况下，redis不是在后台运行的，如果需要在后台运行，把该项的值更改为yes</li>
+</ul>
+
+<pre><code class="language-bash">daemonize yes
+</code></pre>
+
+<ul>
+<li>timeout设置客户端连接时的超时时间，单位为秒。当客户端在这段时间内没有发出任何指令，那么关闭该连接，0是关闭此设置</li>
+<li>loglevel 日志级别</li>
+<li>logfile 日志文件地址</li>
+<li>可用数据库 database</li>
+</ul>
+
+<p><strong>rdb</strong></p>
+
+<ul>
+<li>快照save   指出在多长时间有多少次更新，就将数据同步到文件rdb。</li>
+<li>rdbcompression yes 存储至本地数据时（持久化到rdb文件）是否压缩数据，默认为yes。</li>
+<li>dbfile dumo.rdb 本地持久化数据库文件名</li>
+<li>数据库镜像备份的文件放置的路径。  <code>dir ./</code></li>
+</ul>
+
+<p><strong>复制</strong></p>
+
+<ul>
+<li>主从复制. 设置该数据库为其他数据库的从数据库.  <code>slaveof &lt;masterip&gt; &lt;masterport&gt;</code></li>
+<li>当master服务设置了密码保护时(用requirepass制定的密码) <code>masterauth &lt;master-password&gt;</code></li>
+<li><code>slave-serve-stale-data yes</code>如果slave-serve-stale-data设置为yes(默认设置)，从库会继续相应客户端的请求。如果slave-serve-stale-data是指为no，出去INFO和SLAVOF命令之外的任何请求都会返回一个错误&rdquo;SYNC with master in progress&rdquo;</li>
+</ul>
+
+<p><strong>约束</strong></p>
+
+<ul>
+<li><code>maxclients 128</code>设置同一时间最大客户端连接数，默认无限制，Redis可以同时打开的客户端连接数为Redis进程可以打开的最大文件描述符数。</li>
+<li><code>maxmemory &lt;bytes&gt;</code> 指定Redis最大内存限制，Redis在启动时会把数据加载到内存中，达到最大内存后，Redis会先尝试清除已到期或即将到期的Key,Redis同时也会移除空的list对象</li>
+<li><code>maxmemory-policy volatile-lru</code> 当内存达到最大值的时候Redis会选择删除哪些数据？</li>
+</ul>
+
+<p>有五种方式可供选择</p>
+
+<ul>
+<li>volatile-lru -&gt; 利用LRU算法移除设置过过期时间的key (LRU:最近使用 Least Recently Used )</li>
+<li>allkeys-lru -&gt; 利用LRU算法移除任何key</li>
+<li>volatile-random -&gt; 移除设置过过期时间的随机key</li>
+<li>allkeys-&gt;random -&gt; remove a random key, any key</li>
+<li>volatile-ttl -&gt; 移除即将过期的key(minor TTL)</li>
+<li>noeviction -&gt; 不移除任何可以，只是返回一个写错误</li>
+</ul>
+
+<p><strong>AOF</strong></p>
+
+<ul>
+<li>开启append only模式之后，redis会把所接收到的每一次写操作请求都追加到appendonly.aof文件中，当redis重新启动时，会从该文件恢复出之前的状态。</li>
+</ul>
+
+<pre><code class="language-text">appendonly no
+appendfilename appendonly.aof
+</code></pre>
+
+<p>Redis支持三种同步AOF文件的策略:</p>
+
+<ul>
+<li>no: 不进行同步，系统去操作 . Faster.</li>
+<li>always: always表示每次有写操作都进行同步. Slow, Safest.</li>
+<li>everysec: 表示对写操作进行累积，每秒同步一次. Compromise.</li>
+<li>当AOF文件增长到一定大小的时候Redis能够调用 BGREWRITEAOF 对日志文件进行重写</li>
+</ul>
+
+<p><strong>slow log</strong></p>
+
+<p>可以通过两个参数设置slow log</p>
+
+<ul>
+<li>一个是告诉Redis执行超过多少时间被记录的参数slowlog-log-slower-than(微妙)，</li>
+<li>另一个是slow log 的长度。当一个新命令被记录的时候最早的命令将被从队列中移除</li>
+</ul>
+
+<h4 id="高级配置">高级配置</h4>
+
+<p><strong>hash</strong></p>
+
+<ul>
+<li>当hash中包含超过指定元素个数并且最大的元素没有超过临界时，hash将以一种特殊的编码方式（大大减少内存使用）来存储，Redis Hash对应Value内部实际就是一个HashMap，实际这里会有2种不同实现.这个Hash的成员比较少时Redis为了节省内存会采用类似一维数组的方式来紧凑存储，而不会采用真正的HashMap结构，对应的value redisObject的encoding为zipmap。当成员数量增大时会自动转成真正的HashMap,此时encoding为ht。</li>
+</ul>
+
+<pre><code class="language-text">hash-max-zipmap-entries 512
+hash-max-zipmap-value 64
+</code></pre>
+
+<p><strong>list</strong></p>
+
+<ul>
+<li>list数据类型多少节点以下会采用去指针的紧凑存储格式。</li>
+<li>list数据类型节点值大小小于多少字节会采用紧凑存储格式。</li>
+</ul>
+
+<pre><code class="language-text">list-max-ziplist-entries 512
+list-max-ziplist-value 64
+</code></pre>
+
+<p><strong>set</strong></p>
+
+<ul>
+<li>set数据类型内部数据如果全部是数值型，且包含多少节点以下会采用紧凑格式存储。</li>
+</ul>
+
+<pre><code class="language-text">set-max-intset-entries 512
+</code></pre>
+
+<p>zsort</p>
+
+<ul>
+<li>zsort数据类型多少节点以下会采用去指针的紧凑存储格式。</li>
+<li>zsort数据类型节点值大小小于多少字节会采用紧凑存储格式。</li>
+</ul>
+
+<pre><code class="language-text">zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+</code></pre>
+
+<p><strong>include</strong></p>
+
+<ul>
+<li>指定包含其它的配置文件，可以在同一主机上多个Redis实例之间使用同一份配置文件，而同时各个实例又拥有自己的特定配置文件</li>
+</ul>
+
+<h3 id="codis">codis</h3>
+
+<h3 id="predis">Predis</h3>
+
+<h3 id="memcache">memcache</h3>
+
+<h4 id="cas">cas</h4>
+
+<p><strong>check and set (乐观锁的概念)</strong></p>
+
+<p>Memcached 1.2.5以及更高版本，提供了gets和cas命令，它们可以解决上面的问题。如果您使用gets命令查询某个key的cache会给您返回该item当前值的唯一标识。如果您覆写了这个item并想把它写回到Memcached中，您可以通过cas命令把那唯一标识送给 Memcached。如果该Item存放在Memcached中的唯一标识与您提供的一致，您的写操作将会成功。如果另一个进程在这期间也修改了这个Item，那么该Item存放在Memcached中的唯一标识将会改变，您的写操作就会失败。</p>
+
+<h2 id="swoole">swoole</h2>
+
+<h3 id="异步mysql">异步mysql</h3>
+
+<blockquote>
+<p><a href="http://www.programgo.com/article/65853285546/">http://www.programgo.com/article/65853285546/</a></p>
+
+<p><a href="http://rango.swoole.com/archives/288">http://rango.swoole.com/archives/288</a></p>
+</blockquote>
+
+<h2 id="zookeeper">zookeeper</h2>
+
+<blockquote>
+<p><a href="https://www.ibm.com/developerworks/cn/data/library/bd-zookeeper/">https://www.ibm.com/developerworks/cn/data/library/bd-zookeeper/</a></p>
+
+<p><a href="http://zookeeper.apache.org/doc/trunk/zookeeperTutorial.html?cm_mc_uid=76943637784814694455375&amp;cm_mc_sid_50200000=1489242071">http://zookeeper.apache.org/doc/trunk/zookeeperTutorial.html?cm_mc_uid=76943637784814694455375&amp;cm_mc_sid_50200000=1489242071</a></p>
+</blockquote>
+
+<h3 id="部署架构图">部署架构图</h3>
+
+<p><img src="https://cwiki.apache.org/confluence/download/attachments/24193436/service.png?version=1&amp;modificationDate=1295027310000&amp;api=v2" alt="kafka&amp;#x67B6;&amp;#x6784;&amp;#x56FE;" /></p>
+
+<h2 id="mapreduce">MapReduce</h2>
+
+<blockquote>
+<p><a href="http://blog.csdn.net/v_july_v/article/details/6637014">http://blog.csdn.net/v_july_v/article/details/6637014</a></p>
+</blockquote>
+
+<h2 id="消息队列">消息队列</h2>
+
+<h3 id="kafka">Kafka</h3>
+
+<blockquote>
+<p><a href="https://www.ibm.com/developerworks/cn/opensource/os-cn-kafka/">https://www.ibm.com/developerworks/cn/opensource/os-cn-kafka/</a></p>
+
+<p><a href="http://www.infoq.com/cn/articles/kafka-analysis-part-1">http://www.infoq.com/cn/articles/kafka-analysis-part-1</a></p>
+</blockquote>
+
+<h4 id="设计目标">设计目标</h4>
+
+<ul>
+<li>以时间复杂度为O(1)的方式提供消息持久化能力，即使对TB级以上数据也能保证常数时间复杂度的访问性能。</li>
+<li>支持Kafka Server间的消息分区，及分布式消费，同时保证每个Partition内的消息顺序传输。</li>
+<li>同时支持离线数据处理和实时数据处理。</li>
+<li>Scale out：支持在线水平扩展。</li>
+</ul>
+
+<h2 id="lvs">LVS</h2>
+
+<h2 id="安全">安全</h2>
+
+<h3 id="sql注入">sql注入</h3>
+
+<h3 id="xss">xss</h3>
+
+<h2 id="rpc调用">RPC调用</h2>
+
+<h3 id="thrift">thrift</h3>
+
+<h2 id="加密算法">加密算法</h2>
+
+<h3 id="基本概念">基本概念</h3>
+
+<h4 id="des加密算法">DES加密算法</h4>
+
+<p>DES加密算法是一种分组密码，以64位为分组对数据加密，它的密钥长度是56位，加密解密用同一算法。DES加密算法是对密钥进行保密，而公开算法，包括加密和解密算法。这样，只有掌握了和发送方相同密钥的人才能解读由DES<a href="http://www.cksis.com/blog/category/jiamisuanfa">加密算法</a>加密的密文数据。因此，破译DES加密算法实际上就是搜索密钥的编码。对于56位长度的密钥来说，如果用穷举法来进行搜索的话，其运算次数为256。</p>
+
+<p>随着计算机系统能力的不断发展，DES的安全性比它刚出现时会弱得多，然而从非关键性质的实际出发，仍可以认为它是足够的。不过，DES现在仅用于旧系统的鉴定，而更多地选择新的加密标准。</p>
+
+<h4 id="aes加密算法">AES加密算法</h4>
+
+<p>AES加密算法是密码学中的高级加密标准，该加密算法采用对称分组密码体制，密钥长度的最少支持为128、192、256，分组长度128位，算法应易于各种硬件和软件实现。这种加密算法是美国联邦政府采用的区块加密标准，这个标准用来替代原先的DES，已经被多方分析且广为全世界所使用。</p>
+
+<h4 id="rsa加密算法">RSA加密算法</h4>
+
+<p>RSA加密算法是目前最有影响力的<a href="http://www.cksis.com/blog/892-gongyuejiamisuanfa.html">公钥加密</a>算法，并且被普遍认为是目前最优秀的公钥方案之一。RSA是第一个能同时用于加密和数宇签名的算法，它能够抵抗到目前为止已知的所有密码攻击，已被ISO推荐为公钥数据加密标准。RSA加密算法基于一个十分简单的数论事实：将两个大素数相乘十分容易，但那时想要，但那时想要对其乘积进行因式分解却极其困难，因此可以将乘积公开作为加密密钥。</p>
+
+<h4 id="base64加密算法">base64加密算法</h4>
+
+<p>Base64加密算法是网络上最常见的用于传输8bit字节代码的编码方式之一，Base64编码可用于在HTTP环境下传递较长的标识信息。例如，在JAVAPERSISTENCE系统HIBEMATE中，采用了Base64来将一个较长的唯一标识符编码为一个字符串，用作HTTP表单和HTTPGETURL中的参数。在其他应用程序中，也常常需要把二进制数据编码为适合放在URL（包括隐藏表单域）中的形式。此时，采用Base64编码不仅比较简短，同时也具有不可读性，即所编码的数据不会被人用肉眼所直接看到。</p>
+
+<h4 id="md5加密算法">MD5加密算法</h4>
+
+<p>MD5为计算机安全领域广泛使用的一种散列函数，用以提供消息的完整性保护。对<a href="http://www.cksis.com/blog/316-md5jiamiyingyong.html">MD5加密算法</a>简要的叙述可以为：MD5以512位分组来处理输入的信息，且每一分组又被划分为16个32位子分组，经过了一系列的处理后，算法的输出由四个32位分组组成，将这四个32位分组级联后将生成—个128位散列值。</p>
+
+<h4 id="sha1加密算法">SHA1加密算法</h4>
+
+<p>SHA1是和MD5一样流行的消息摘要算法。SHA加密算法模仿MD4加密算法。SHA1设计为和数字签名算法（ＤＳＡ）一起使用。</p>
+
+<h2 id="字符编码-字符集">字符编码&amp;字符集</h2>
+
+<blockquote>
+<p><a href="http://cenalulu.github.io/linux/character-encoding/">http://cenalulu.github.io/linux/character-encoding/</a></p>
+</blockquote>
+
+<h3 id="字符集">字符集</h3>
+
+<p>字符集就规定了某个文字对应的二进制数字存放方式（编码）和某串二进制数值代表了哪个文字（解码）的转换关系。</p>
+
+<h3 id="字符编码">字符编码</h3>
+
+<ul>
+<li><code>字库表</code>决定了整个字符集能够展现表示的所有字符的范围。</li>
+<li><code>编码字符集</code>，即用一个编码值<code>code point</code>来表示一个字符在字库中的位置。</li>
+<li><code>字符编码</code>，将编码字符集和实际存储数值之间的转换关系。</li>
+</ul>
+
+<h3 id="utf-8和unicode的关系">UTF-8和Unicode的关系</h3>
+
+<ul>
+<li>Unicode就是上文中提到的编码字符集，而UTF-8就是字符编码，即Unicode规则字库的一种实现形式。</li>
+<li>Unicode的编号从<code>0000</code>开始一直到<code>10FFFF</code>共分为16个Plane，每个Plane中有65536个字符。而UTF-8则只实现了第一个Plane，可见UTF-8虽然是一个当今接受度最广的字符集编码，但是它并没有涵盖整个Unicode的字库，这也造成了它在某些场景下对于特殊字符的处理困难（下文会有提到）。</li>
+</ul>
+
+<h3 id="utf-8编码简介">UTF-8编码简介</h3>
+
+<p>UTF-8编码为变长编码。最小编码单位（<code>code unit</code>）为一个字节。一个字节的前1-3个bit为描述性部分，后面为实际序号部分。</p>
+
+<ul>
+<li>如果一个字节的第一位为0，那么代表当前字符为单字节字符，占用一个字节的空间。0之后的所有部分（7个bit）代表在Unicode中的序号。</li>
+<li>如果一个字节以110开头，那么代表当前字符为双字节字符，占用2个字节的空间。110之后的所有部分（5个bit）加上后一个字节的除10外的部分（6个bit）代表在Unicode中的序号。且第二个字节以10开头</li>
+<li>如果一个字节以1110开头，那么代表当前字符为三字节字符，占用2个字节的空间。110之后的所有部分（5个bit）加上后两个字节的除10外的部分（12个bit）代表在Unicode中的序号。且第二、第三个字节以10开头</li>
+<li>如果一个字节以10开头，那么代表当前字节为多字节字符的第二个字节。10之后的所有部分（6个bit）和之前的部分一同组成在Unicode中的序号。</li>
+</ul>
+
+<p>细心的读者不难从以上的简单介绍中得出以下规律：</p>
+
+<ul>
+<li>3个字节的UTF-8十六进制编码一定是以<code>E</code>开头的</li>
+<li>2个字节的UTF-8十六进制编码一定是以<code>C</code>或<code>D</code>开头的</li>
+<li>1个字节的UTF-8十六进制编码一定是以比<code>8</code>小的数字开头的</li>
+</ul>
+
+<h2 id="工作内容">工作内容</h2>
+
+<h3 id="任务发布">任务发布</h3>
+
+<h2 id="微信红包">微信红包</h2>
+
+<blockquote>
+<p><a href="http://www.infoq.com/cn/articles/2017hongbao-weixin">http://www.infoq.com/cn/articles/2017hongbao-weixin</a></p>
+
+<p><a href="http://colobu.com/2015/05/04/weixin-red-packets-design-discussion/">http://colobu.com/2015/05/04/weixin-red-packets-design-discussion/</a></p>
+</blockquote>
+
+<h3 id="微信红包两大业务特点">微信红包两大业务特点</h3>
+
+<ol>
+<li>微信红包业务比普通商品“秒杀”有更海量的并发要求。</li>
+<li>微信红包业务要求更严格的安全级别。</li>
+</ol>
+
+<h3 id="微信红包技术难点">微信红包技术难点</h3>
+
+<ol>
+<li>事务级操作量大</li>
+<li>事务性要求严格</li>
+</ol>
+
+<h3 id="解决高并发问题通常使用的方案">解决高并发问题通常使用的方案</h3>
+
+<ol>
+<li>使用内存操作替代实时的DB事务操作。</li>
+</ol>
+
+<blockquote>
+<p>这种方案的优点是通过用内存操作代替磁盘，提高了并发性能。两个存储可能失败</p>
+</blockquote>
+
+<ol>
+<li>使用乐观锁替代悲观锁。</li>
+</ol>
+
+<blockquote>
+<p>所谓悲观锁，是关系数据库管理系统里的一种并发控制的方法。它可以阻止一个事务以影响其他用户的方式来修改数据。如果一个事务执行的操作对某行数据应用了锁，那只有当这个事务把锁释放，其他事务才能够执行与该锁冲突的操作。对应于上文分析中的“并发请求抢锁”行为。</p>
+
+<p>所谓乐观锁，它假设多用户并发的事务在处理时不会彼此互相影响，各事务能够在不产生锁的情况下处理各自影响的那部分数据。在提交数据更新之前，每个事务会先检查在该事务读取数据后，有没有其他事务又修改了该数据。如果其他事务有更新的话，正在提交的事务会进行回滚。</p>
+
+<p>商品“秒杀”系统中，乐观锁的具体应用方法，是在DB的“库存”记录中维护一个版本号。在更新“库存”的操作进行前，先去DB获取当前版本号。在更新库存的事务提交时，检查该版本号是否已被其他事务修改。如果版本没被修改，则提交事务，且版本号加1；如果版本号已经被其他事务修改，则回滚事务，并给上层报错。</p>
+</blockquote>
+
+<p>应用于微信红包系统，则会存在下面三个问题</p>
+
+<blockquote>
+<ol>
+<li>拆红包采用乐观锁，并发抢到相同版本号的拆红包请求中，只有一个能拆红包成功，其他的请求将事        务回滚并返回失败，给用户报错，用户体验完全不可接受。</li>
+<li>如果采用乐观锁，将会导致第一时间同时拆红包的用户有一部分直接返回失败，反而那些“手慢”的用户，有可能因为并发减小后拆红包成功，这会带来用户体验上的负面影响。</li>
+<li>如果采用乐观锁的方式，会带来大数量的无效更新请求、事务回滚，给DB造成不必要的额外压力。</li>
+</ol>
+</blockquote>
+
+<h3 id="微信红包系统的高并发解决方案">微信红包系统的高并发解决方案</h3>
+
+<ul>
+<li>系统垂直SET化，分而治之。</li>
+<li>逻辑Server层将请求排队，解决DB并发问题。
+
+<ul>
+<li>将同一个红包ID的所有请求stick到同一台Server。</li>
+<li>设计单机请求排队方案。</li>
+<li>增加memcached控制并发。</li>
+</ul></li>
+<li>双维度库表设计，保障系统性能稳定
+
+<ul>
+<li>初期是根据红包ID的hash值分为多库多表。</li>
+<li>采用冷热分离，将历史冷数据与当前热数据分开存储，可以解决这个问题。</li>
+</ul></li>
+</ul>
+
+<h2 id="分布式事务">分布式事务</h2>
+
+<p>coolshell的解析<a href="http://coolshell.cn/articles/10910.html">http://coolshell.cn/articles/10910.html</a></p>
+
+<h2 id="前言">前言##</h2>
+
+<p><strong>一台(单点)服务器提供数据服务时，会遇到的问题</strong></p>
+
+<ul>
+<li>一台服务器的性能不足以提供足够的能力服务所有请求</li>
+<li>如果这台服务器宕机，将会造成服务不可用甚至丢失数据</li>
+</ul>
+
+<p><strong>解决单点问题，引入更多服务器，两种手段来扩展数据服务</strong></p>
+
+<ul>
+<li>数据分区</li>
+<li>数据镜像</li>
+</ul>
+
+<p><strong>以上方案中需要考虑的问题总结为</strong></p>
+
+<ul>
+<li>容灾：数据不丢</li>
+<li>数据一致性：事务处理</li>
+<li>性能</li>
+</ul>
+
+<h4 id="2pc-又称两阶段提交">2pc，又称两阶段提交</h4>
+
+<p>引入协调者、参与者来保证ACID，分为两个阶段如下：</p>
+
+<p><strong>第一阶段</strong></p>
+
+<ol>
+<li>协调者询问所有参与者，是否可以执行提交操作</li>
+<li>参与者开始事务执行的准备工作，预留资源、锁定资源、写redo\undolog</li>
+<li>响应协调者是否可以提交</li>
+</ol>
+
+<p><strong>第二阶段</strong></p>
+
+<ol>
+<li>如果所有参与者都回应可以提交。那么，协调者向所有参与者发送“正式提交”的命令。参与者完成提交工作，响应完成</li>
+<li>如果有一个参与者拒绝提交，则协调者向所有参与者发送回滚消息</li>
+</ol>
+
+<p><strong>2pc存在的最大问题</strong></p>
+
+<p>如果一阶段完成，参与者第二阶段没有收到决策，那么数据节点会进入“不知所措”的状态，这个状态会block整个事务。</p>
+
+<h4 id="3pc-又称三阶段提交-2pc的升级版">3pc，又称三阶段提交，2pc的升级版</h4>
+
+<p>3pc与2pc的主要区别在于：在第一阶段询问是否可以提交的时候，不锁定资源。除非所有参与者都回应可以提交，才开始在第二阶段锁定资源</p>
+
+<h3 id="paxos">PAXOS</h3>
+
+<blockquote>
+<p><a href="https://www.zhihu.com/question/19787937">https://www.zhihu.com/question/19787937</a></p>
+
+<p>作者博客<a href="http://lamport.azurewebsites.net/pubs/pubs.html#lamport-paxos">http://lamport.azurewebsites.net/pubs/pubs.html#lamport-paxos</a></p>
+
+<p>coolshell的解析<a href="http://coolshell.cn/articles/10910.html">http://coolshell.cn/articles/10910.html</a></p>
+</blockquote>
+
+<p><strong>基本概念</strong></p>
+
+<p>PAXOS 算法，集群中任何一个节点都可以发起数据修改的提案，最终提案是否通过取决于集群中是否有过半数的节点同意。</p>
+
+<p>他是一个民主选举算法，过半数节点的决定会成为整个集群的统一决定。</p>
+
+<h2 id="其他">其他</h2>
+
+<h3 id="微信序列号生成器架构设计及演变">微信序列号生成器架构设计及演变</h3>
+
+<blockquote>
+<p><a href="http://www.infoq.com/cn/articles/wechat-serial-number-generator-architecture">http://www.infoq.com/cn/articles/wechat-serial-number-generator-architecture</a></p>
+</blockquote>
+
+<h4 id="配置开发机以让外网访问">配置开发机以让外网访问</h4>
+
+<h4 id="你有哪些得意之作">你有哪些得意之作</h4>
+
+<h4 id="如何做测试">如何做测试</h4>
+
+<h4 id="接触到的mysql数据库表最大是多少行记录">接触到的Mysql数据库表最大是多少行记录?</h4>
+
+<h4 id="出现性能瓶颈怎么解决">出现性能瓶颈怎么解决？</h4>
+
+<h4 id="学习一个新框架如何入手">学习一个新框架如何入手?</h4>
+
+<h2 id="人力问题">人力问题</h2>
+
+<h4 id="你最大的缺点是什么">你最大的缺点是什么</h4>
+
+<p>面试官通常考察影应聘者的因素，从深往浅主要有：三观，性格特点，思维方式，技能，知识。</p>
+
+<p>想象一个冰山模型，最下面的是三观，往上是性格特点，思维方式，这三个都在水面下，是先天遗传和后天环境交互影响的结果。水面上的是技能和知识，主要依赖后天的学习和训练来养成。发现没有，水面下的三个因素，因为涉及遗传这个不可抗力，会更稳定，也就是缺少了可塑性。这些地方出了问题，可以改，但是难度系数大，收益效率低。水面上的两点，可塑性大。如果这个地方出了问题，改起来容易。请自动类比一台CPU坏了的电脑和一台F键坏了的电脑，哪台让你更揪心？</p>
+
+<p><em><strong>手动加粗</strong></em></p>
+
+<blockquote>
+<p>在谈到自己缺点的时候，尽量避开三观，性格方面的缺点。思维方式作为可选项，但不是优选项。最好还是着眼于知识和技能。因为这两点改进空间大，速度快。</p>
+</blockquote>
+
+<p><strong>手动加粗2</strong></p>
+
+<p>往高处说，往远处说</p>
+
+<ol>
+<li><strong>往高处说：能力层次有高有低，请你挑一个与你目前所在层次相隔较远的能力缺陷来说。</strong></li>
+<li><strong>术业有专攻，找一个与你本职工作间隔较远的专业能力缺陷来说。</strong></li>
+</ol>
+
+<p>​</p>
+
+<h2 id="目标公司">目标公司</h2>
+
+<ul>
+<li>美团    望京</li>
+<li>链家网</li>
+</ul>
+
+  </div>
+
+  
+  
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">petrie</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">0001-01-01</span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+  
+  
+</article>
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+  
+    
+
+
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+  
+    <a href="mailto:lpfvip2008@gmail.com" rel="me noopener" class="iconfont"
+      title="email" >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/Petrie" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="http://petrie.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2015 -
+    2020
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        petrie
+        
+      </span></span>
+
+  
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,2319 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/</link>
+    <description>Recent content on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Sun, 20 Aug 2017 21:38:52 +0800</lastBuildDate>
+    
+        <atom:link href="http://petrie.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>http://petrie.github.io/about/</link>
+      <pubDate>Sun, 20 Aug 2017 21:38:52 +0800</pubDate>
+      
+      <guid>http://petrie.github.io/about/</guid>
+      
+        <description></description>
+      
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（五）－大内存区large_free_bucket的存入</title>
+      <link>http://petrie.github.io/post/2018-04-12-php-zend-memory-manager4-large-free-bucket/</link>
+      <pubDate>Thu, 12 Apr 2018 18:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-12-php-zend-memory-manager4-large-free-bucket/</guid>
+      
+        <description>&lt;p&gt;之前的章节中介绍过large_free_bucket的存入条件。这一篇将介绍large_free_bucket的主要结构包括其中的链表结构和树结构和存入取出流程。本章讲通过图示大内存区域内存分部情况。&lt;/p&gt;
+
+&lt;h3 id=&#34;什么时候会向large-free-bucket存入内存块&#34;&gt;什么时候会向large_free_bucket存入内存块&lt;/h3&gt;
+
+&lt;p&gt;这里在复习下存入large_free_bucket流程。在调用emalloc申请能存，且在当前heap中没有找到合适内存块，emalloc函数会调用malloc向内核申请内存。向内核申请每次只能申请 heap-&amp;gt;block_size倍数大小内存。所以内核申请到的  heap-&amp;gt;block_size倍数 大小的内存并不会全部返回到emalloc调用者，而是有剩余。&lt;/p&gt;
+
+&lt;p&gt;举个例子，假设heap-&amp;gt;block_size=256k，如果emalloc调用者申请大小为250k时，emalloc内部会向内核申请256k大小的内存。所以会有6k的内存剩余，这6k的内存将会存入到&lt;strong&gt;大内存区large_free_bucket&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;p&gt;另外一个例子，假设heap-&amp;gt;block_size=256k，如果emalloc调用者申请大小为260k（大于256k）时，emalloc会申请256*2=512k大小的内存，此时会有512k－260k＝252k的内存剩余。此时剩下的252k内存会存入到&lt;strong&gt;剩余内存区rest_bucket&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;h3 id=&#34;手动构建large-free-bucket结构&#34;&gt;手动构建large_free_bucket结构&lt;/h3&gt;
+
+&lt;h4 id=&#34;large-free-bucket结构举例&#34;&gt;large_free_bucket结构举例&lt;/h4&gt;
+
+&lt;p&gt;现在假设有以下内存块在large_free_bucket，分别为：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;大小			二进制					alloc_size
+	
+600			0000 0010 0101 1000		262144-48-600=261496
+704			0000 0010 1100 0000		262144-48-704=261392
+800			0000 0011 0010 0000		262144-48-800=261296
+904			0000 0011 1000 1000		262144-48-904=261192
+1000		0000 0011 1110 1000		262144-48-1000=261096
+600			0000 0010 0101 1000		262144-48-600=261496
+704			0000 0010 1100 0000		262144-48-704=261392
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面第一列中是准备存入heap中的内存大小，第二列为其二进制。第三列为_zend_mm_alloc_int传入的内存大小。&lt;/p&gt;
+
+&lt;p&gt;之前提过用gdb手动调用_zend_mm_alloc_int的方法，详情看一下前面的文章“&lt;a href=&#34;http://petrie.github.io/2018/04/11/php-zend-gdb-call/&#34;&gt;PHP内存管理ZMM（四）－GDB调试php源码并手动调用ZMM相关函数&lt;/a&gt;”。&lt;/p&gt;
+
+&lt;h4 id=&#34;存入第一个大小为600b的内存&#34;&gt;存入第一个大小为600b的内存&lt;/h4&gt;
+
+&lt;p&gt;手动调用&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;call _zend_mm_alloc_int (heap=0xe88d90, size=261496)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;申请大小261496b（第一行最后一行的数值），ZMM会向内核申请262144(256k)的内存，去掉部分结构体占用的内存48b。则剩余600b大小的内存，这600b的内存讲放入&lt;strong&gt;大内存区域&lt;/strong&gt;中。&lt;/p&gt;
+
+&lt;p&gt;用gdb查看heap-&amp;gt;large_free_buckets当前的情况&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p heap-&amp;gt;large_free_bitmap
+$26 = 512
+(gdb) p heap-&amp;gt;large_free_buckets
+$10 = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7ffff7fecda8, 0x0 &amp;lt;repeats 54 times&amp;gt;}
+(gdb) p &amp;amp;heap-&amp;gt;large_free_buckets[9]
+$16 = (zend_mm_free_block **) 0xe89470
+(gdb) p *heap-&amp;gt;large_free_buckets[9]
+$15 = {info = {_size = 600, _prev = 261513}, prev_free_block = 0x7ffff7fabda8, next_free_block = 0x7ffff7fabda8, parent = 0xe89470, child = {0x0, 0x0}}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;图示如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://on-img.com/chart_image/5acf199ee4b0518eaca92c2f.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如图所示，插入的第一个元素zend_mm_free_block[600]（用zend_mm_free_block[600]表示大小为600的zend_mm_free_block内存结构），其prev_free_block和next_free_block均指向其本身，其parent为&amp;amp;heap-&amp;gt;large_free_buckets[9]，heap-&amp;gt;large_free_buckets[9]则指向zend_mm_free_block[600]。&lt;/p&gt;
+
+&lt;p&gt;相关代码:&lt;a href=&#34;https://github.com/php/php-src/blob/9c1d686748cdb46e2f80a9bc800df0015fb709b1/Zend/zend_alloc.c#L739&#34;&gt;引自&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;		p = &amp;amp;heap-&amp;gt;large_free_buckets[index];
+		mm_block-&amp;gt;child[0] = mm_block-&amp;gt;child[1] = NULL;
+		if (!*p) {
+			*p = mm_block;
+			mm_block-&amp;gt;parent = p;
+			mm_block-&amp;gt;prev_free_block = mm_block-&amp;gt;next_free_block = mm_block;
+			heap-&amp;gt;large_free_bitmap |= (ZEND_MM_LONG_CONST(1) &amp;lt;&amp;lt; index);
+		} else {
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;存入大小为600b的内存&#34;&gt;存入大小为600b的内存&lt;/h4&gt;
+
+&lt;p&gt;手动调用&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;call _zend_mm_alloc_int (heap=0xe88d90, size=261392)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用gdb查看heap-&amp;gt;large_free_buckets当前的情况&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p heap-&amp;gt;large_free_bitmap
+$27 = 512
+(gdb) p heap-&amp;gt;large_free_buckets
+$28 = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7ffff7fecda8, 0x0 &amp;lt;repeats 54 times&amp;gt;}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]
+$29 = {info = {_size = 600, _prev = 261513}, prev_free_block = 0x7ffff7fabda8, next_free_block = 0x7ffff7fabda8, parent = 0xe89470, child = {0x7ffff7f6ad40, 0x0}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[0]
+$30 = {info = {_size = 704, _prev = 261409}, prev_free_block = 0x7ffff7f6ad40, next_free_block = 0x7ffff7f6ad40, parent = 0x7ffff7fecdd0, child = {0x0, 0x0}}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;图示如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://on-img.com/chart_image/5acf1923e4b02dfcf99d4a6b.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里要注意的地方是zend_mm_free_block[704]的parent字段是一个指针的指针，其指向zend_mm_free_block[600]的child[0]字段。&lt;/p&gt;
+
+&lt;p&gt;相关代码：[](&lt;a href=&#34;https://github.com/php/php-src/blob/9c1d686748cdb46e2f80a9bc800df0015fb709b1/Zend/zend_alloc.c#L746&#34;&gt;https://github.com/php/php-src/blob/9c1d686748cdb46e2f80a9bc800df0015fb709b1/Zend/zend_alloc.c#L746&lt;/a&gt;)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;} else {
+			size_t m;
+
+			for (m = size &amp;lt;&amp;lt; (ZEND_MM_NUM_BUCKETS - index); ; m &amp;lt;&amp;lt;= 1) {
+				zend_mm_free_block *prev = *p;
+
+				if (ZEND_MM_FREE_BLOCK_SIZE(prev) != size) {
+					p = &amp;amp;prev-&amp;gt;child[(m &amp;gt;&amp;gt; (ZEND_MM_NUM_BUCKETS-1)) &amp;amp; 1];
+					if (!*p) {
+						*p = mm_block;
+						mm_block-&amp;gt;parent = p;
+						mm_block-&amp;gt;prev_free_block = mm_block-&amp;gt;next_free_block = mm_block;
+						break;
+					}
+				} else {
+					...
+				}
+			}
+		}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;存入大小为800b-904b-1000b的内存&#34;&gt;存入大小为800b、904b、1000b的内存&lt;/h4&gt;
+
+&lt;p&gt;依次手动调用&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;call _zend_mm_alloc_int (heap=0xe88d90, size=261296)
+call _zend_mm_alloc_int (heap=0xe88d90, size=261192)
+call _zend_mm_alloc_int (heap=0xe88d90, size=261096)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用gdb查看heap-&amp;gt;large_free_buckets当前的情况&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p heap-&amp;gt;large_free_buckets[9]
+$71 = (zend_mm_free_block *) 0x7ffff7fecda8
+(gdb) p *heap-&amp;gt;large_free_buckets[9]
+$72 = {info = {_size = 600, _prev = 261513}, prev_free_block = 0x7ffff7fecda8, next_free_block = 0x7ffff7fecda8, parent = 0xe89470, child = {0x7ffff7fabd40, 0x7ffff7f6ace0}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[0]
+$73 = {info = {_size = 704, _prev = 261409}, prev_free_block = 0x7ffff7fabd40, next_free_block = 0x7ffff7fabd40, parent = 0x7ffff7fecdd0, child = {0x0, 0x0}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[1]
+$74 = {info = {_size = 800, _prev = 261313}, prev_free_block = 0x7ffff7f6ace0, next_free_block = 0x7ffff7f6ace0, parent = 0x7ffff7fecdd8, child = {0x0, 0x7ffff7f29c78}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[1]-&amp;gt;child[1]
+$75 = {info = {_size = 904, _prev = 261209}, prev_free_block = 0x7ffff7f29c78, next_free_block = 0x7ffff7f29c78, parent = 0x7ffff7f6ad10, child = {0x0, 0x7ffff7ee8c18}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[1]-&amp;gt;child[1]-&amp;gt;child[1]
+$76 = {info = {_size = 1000, _prev = 261113}, prev_free_block = 0x7ffff7ee8c18, next_free_block = 0x7ffff7ee8c18, parent = 0x7ffff7f29ca8, child = {0x0, 0x0}}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;图示如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://on-img.com/chart_image/5acf1a4ce4b0f5fa24d00514.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&#34;存入大小为600b-704b的内存&#34;&gt;存入大小为600b、704b的内存&lt;/h4&gt;
+
+&lt;p&gt;依次手动调用&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;call _zend_mm_alloc_int (heap=0xe88d90, size=261496)
+call _zend_mm_alloc_int (heap=0xe88d90, size=261392)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用gdb查看heap-&amp;gt;large_free_buckets当前的情况&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;child[0]-&amp;gt;next_free_block
+$101 = {info = {_size = 704, _prev = 261409}, prev_free_block = 0x7ffff7fabd40, next_free_block = 0x7ffff7fabd40, parent = 0x0, child = {0x0, 0x0}}
+(gdb) p *heap-&amp;gt;large_free_buckets[9]-&amp;gt;next_free_block
+$102 = {info = {_size = 600, _prev = 261513}, prev_free_block = 0x7ffff7fecda8, next_free_block = 0x7ffff7fecda8, parent = 0x0, child = {0x0, 0x0}}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;图示如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://on-img.com/chart_image/5acf2732e4b0518eaca98596.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上图包括了 大内存区域 的两种数据结构：树结构和双向链表结构。&lt;/p&gt;
+
+&lt;p&gt;相关代码：&lt;a href=&#34;https://github.com/php/php-src/blob/9c1d686748cdb46e2f80a9bc800df0015fb709b1/Zend/zend_alloc.c#L760&#34;&gt;引用&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;		} else {
+			size_t m;
+
+			for (m = size &amp;lt;&amp;lt; (ZEND_MM_NUM_BUCKETS - index); ; m &amp;lt;&amp;lt;= 1) {
+				zend_mm_free_block *prev = *p;
+
+				if (ZEND_MM_FREE_BLOCK_SIZE(prev) != size) {
+					p = &amp;amp;prev-&amp;gt;child[(m &amp;gt;&amp;gt; (ZEND_MM_NUM_BUCKETS-1)) &amp;amp; 1];
+					...
+				} else {
+					zend_mm_free_block *next = prev-&amp;gt;next_free_block;
+
+					prev-&amp;gt;next_free_block = next-&amp;gt;prev_free_block = mm_block;
+					mm_block-&amp;gt;next_free_block = next;
+					mm_block-&amp;gt;prev_free_block = prev;
+					mm_block-&amp;gt;parent = NULL;
+					break;
+				}
+			}
+		}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;end&#34;&gt;END&lt;/h3&gt;
+
+&lt;p&gt;本章内容较多，可能会比较难理解，通过gdb调试有助于更好的理解。另外前几篇关于ZMM的文章也有助于对本章的理解。&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（四）－GDB调试php源码并手动调用ZMM相关函数</title>
+      <link>http://petrie.github.io/post/2018-04-11-php-zend-gdb-call/</link>
+      <pubDate>Wed, 11 Apr 2018 18:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-11-php-zend-gdb-call/</guid>
+      
+        <description>&lt;p&gt;本章讲介绍gdb调试php，并手动调用ZMM中申请内存和查找大内存块的函数&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;_zend_mm_alloc_int&lt;/li&gt;
+&lt;li&gt;zend_mm_search_large_block&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;为什么要手动调用函数&#34;&gt;为什么要手动调用函数&lt;/h4&gt;
+
+&lt;p&gt;在阅读PHP ZMM源码的时候，有许多复杂的逻辑仅仅通过阅读源码很难理解，比如大内存large_free_buckets结构的构造。同构手动调用函数，可以方便的执行要申请的内存大小，从而测试构造large_free_buckets结构&lt;/p&gt;
+
+&lt;h4 id=&#34;编译安装php&#34;&gt;编译安装PHP&lt;/h4&gt;
+
+&lt;p&gt;从github上下载php源码&lt;/p&gt;
+
+&lt;p&gt;编译到目录:~/php5.6-disabledebug，注意不要开启debug选项&lt;/p&gt;
+
+&lt;h4 id=&#34;gdb调试php&#34;&gt;GDB调试PHP&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt; gdb --args ~/php5.6-disabledebug/bin/php test.php 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;test.php可以是任意可执行php代码&lt;/p&gt;
+
+&lt;p&gt;执行后设置断点&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) b _zend_mm_alloc_int
+Breakpoint 1 at 0x6b2490: file /home/vagrant/php-src/Zend/zend_alloc.c, line 1881.
+(gdb) b zend_mm_add_to_free_list
+Breakpoint 2 at 0x6b12d0: file /home/vagrant/php-src/Zend/zend_alloc.c, line 734.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;运行run命令执行test.php脚本&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) run
+Starting program: /home/vagrant/php5.6-disabledebug/bin/php test.php
+[Thread debugging using libthread_db enabled]
+
+Breakpoint 1, _zend_mm_alloc_int (heap=0xe88d90, size=8192) at /home/vagrant/php-src/Zend/zend_alloc.c:1881
+1881	{
+Missing separate debuginfos, use: debuginfo-install glibc-2.12-1.209.el6_9.2.x86_64 libxml2-2.7.6-21.el6_8.1.x86_64 nss-softokn-freebl-3.14.3-23.3.el6_8.x86_64 zlib-1.2.3-29.el6.x86_64
+(gdb)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;执行-zend-mm-alloc-int函数申请500b的内存&#34;&gt;执行_zend_mm_alloc_int函数申请500b的内存&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) call _zend_mm_alloc_int (0xe88d80, 500)
+
+Breakpoint 1, _zend_mm_alloc_int (heap=0xe88d80, size=500) at /home/vagrant/php-src/Zend/zend_alloc.c:1881
+1881	{
+The program being debugged stopped while in a function called from GDB.
+Evaluation of the expression containing the function
+(_zend_mm_alloc_int) will be abandoned.
+When the function is done executing, GDB will silently stop.
+(gdb)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;执行20行代码&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) n 20
+
+Program received signal SIGSEGV, Segmentation fault.
+_zend_mm_alloc_int (heap=0xe88d80, size=500) at /home/vagrant/php-src/Zend/zend_alloc.c:1945
+1945				if (UNEXPECTED(ZEND_MM_FREE_BLOCK_SIZE(p) == true_size)) {
+(gdb)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;查看heap各个字段的值&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p size
+$1 = 500
+(gdb) p true_size
+$2 = 520
+(gdb) p heap-&amp;gt;size
+$3 = 0
+(gdb) p heap-&amp;gt;real_size
+$4 = 0
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;执行finish结束_zend_mm_alloc_int函数的执行&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) finish
+Run till exit from #0  _zend_mm_alloc_int (heap=0xe88d80, size=500) at /home/vagrant/php-src/Zend/zend_alloc.c:1945
+
+Program terminated with signal SIGSEGV, Segmentation fault.
+The program no longer exists.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;再次查看heap各个字段的值&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;(gdb) p heap-&amp;gt;size
+$9 = 520
+(gdb) p heap-&amp;gt;real_size
+$10 = 262144
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;如何执行zend-mm-search-large-block&#34;&gt;如何执行zend_mm_search_large_block&lt;/h4&gt;
+
+&lt;p&gt;gdb调试过程中不知道什么原因。_zend_mm_alloc_int可以手动调用，但是zend_mm_search_large_block却不行。这里只能绕路调用。因为每次在调用_zend_mm_alloc_int必然会调用zend_mm_search_large_block。所以想调用&lt;/p&gt;
+
+&lt;p&gt;zend_mm_search_large_block，调用zend_mm_alloc_int即可。这里就不做演示了。&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（三）－内存分配函数emalloc</title>
+      <link>http://petrie.github.io/post/2018-04-09-php-zend-memory-manager-2/</link>
+      <pubDate>Wed, 11 Apr 2018 10:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-09-php-zend-memory-manager-2/</guid>
+      
+        <description>&lt;h4 id=&#34;主流程&#34;&gt;主流程&lt;/h4&gt;
+
+&lt;p&gt;emalloc是ZMM中heap层实现的函数，其内部调用_zend_mm_alloc_int函数。在_zend_mm_alloc_int中会依次在heap层的缓存区、小内存区、大内存区、剩余内存区寻找合适的内存。如果在这四个区域中都为查找到合适的内存，则调用malloc向内核申请，在向内核申请内存时，申请的大小必须是segment_size(256k)的整数倍，最小为256k。以下用流程图展示&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-flow&#34;&gt;st=&amp;gt;start:   Start   |past:&amp;gt;http://www.google.com[blank]
+e=&amp;gt;end: End:&amp;gt;http://www.google.com
+op1=&amp;gt;operation: My Operation|past
+op2=&amp;gt;operation: Stuff|current
+sub1=&amp;gt;subroutine: My Subroutine|invalid
+cond=&amp;gt;condition: Yes or No?|approved:&amp;gt;http://www.google.com
+c2=&amp;gt;condition: Good idea|rejected
+io=&amp;gt;inputoutput: catch something...|request
+cache=&amp;gt;operation: 查找缓存 heap- &amp;gt;cache 
+找到返回，未找到则继续|past
+free_buckets=&amp;gt;operation: 查找小块内存heap- &amp;gt;free_buckets 
+找到返回，未找到则继续|past
+large_free_buckets=&amp;gt;operation: 查找大块内存heap- &amp;gt;large_free_buckets 
+找到返回，未找到则继续|past
+rest_buckets=&amp;gt;operation: 查找剩余内存 heap- &amp;gt;rest_buckets 
+找到返回，未找到则继续|past
+core_malloc=&amp;gt;operation: 在heap四个区域中均为找到合适大小的内存，
+则向内核申请内存
+add_rest=&amp;gt;operation: 将内核申请的内存分割为两部分，一部分函数返回，即本次申请的内存。
+剩下的调用zend_mm_add_to_free_list，根据大小添加到heap的四个区域中
+st-&amp;gt;cache-&amp;gt;free_buckets-&amp;gt;large_free_buckets-&amp;gt;rest_buckets-&amp;gt;core_malloc-&amp;gt;add_rest-&amp;gt;e
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;代码注解&#34;&gt;代码注解&lt;/h4&gt;
+
+&lt;p&gt;代码如下：&lt;a href=&#34;https://github.com/php/php-src/blob/9c1d686748cdb46e2f80a9bc800df0015fb709b1/Zend/zend_alloc.c#L1880&#34;&gt;引自&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;
+  static void *_zend_mm_alloc_int(zend_mm_heap *heap, size_t size ZEND_FILE_LINE_DC ZEND_FILE_LINE_ORIG_DC)
+{
+   zend_mm_free_block *best_fit;
+  //计算true_size,对于计算逻辑和取值可以参考上一篇文章
+   size_t true_size = ZEND_MM_TRUE_SIZE(size);
+   size_t block_size;
+   size_t remaining_size;
+   size_t segment_size;
+   zend_mm_segment *segment;
+   int keep_rest = 0;
+#ifdef ZEND_SIGNALS
+   TSRMLS_FETCH();
+#endif
+
+   HANDLE_BLOCK_INTERRUPTIONS();
+
+   if (EXPECTED((true_size))) {
+     //根据true_size 计算 index的值
+      size_t index = ZEND_MM_BUCKET_INDEX(true_size);
+      size_t bitmap;
+
+      if (UNEXPECTED(true_size &amp;lt; size)) {
+         goto out_of_memory;
+      }
+#if ZEND_MM_CACHE //在缓存块中中查找
+      if (EXPECTED(heap-&amp;gt;cache[index] != NULL)) {
+         /* Get block from cache */
+#if ZEND_MM_CACHE_STAT
+         heap-&amp;gt;cache_stat[index].count--;
+         heap-&amp;gt;cache_stat[index].hit++;
+#endif
+         best_fit = heap-&amp;gt;cache[index];
+         heap-&amp;gt;cache[index] = best_fit-&amp;gt;prev_free_block;
+         heap-&amp;gt;cached -= true_size;
+         ZEND_MM_CHECK_MAGIC(best_fit, MEM_BLOCK_CACHED);
+         ZEND_MM_SET_DEBUG_INFO(best_fit, size, 1, 0);
+         HANDLE_UNBLOCK_INTERRUPTIONS();
+         return ZEND_MM_DATA_OF(best_fit);
+      }
+#if ZEND_MM_CACHE_STAT
+      heap-&amp;gt;cache_stat[index].miss++;
+#endif
+#endif
+	 //在小内存块中查找
+      bitmap = heap-&amp;gt;free_bitmap &amp;gt;&amp;gt; index;
+      if (bitmap) { //如果bitmap不等于0，说明存在大于或等于true_size的内存
+         /* Found some &amp;quot;small&amp;quot; free block that can be used */
+         index += zend_mm_low_bit(bitmap);//定位到true_size所在的index。举例说明：假设heap-&amp;gt;free_bitmap＝0b100010, index=3,则bitmap＝(0b100),zend_mm_low_bit(bitmap)=3,最终index＝6
+         best_fit = heap-&amp;gt;free_buckets[index*2];//从free_buckets取出内存
+#if ZEND_MM_CACHE_STAT
+         heap-&amp;gt;cache_stat[ZEND_MM_NUM_BUCKETS].hit++;
+#endif
+         goto zend_mm_finished_searching_for_block; //内存查找完成
+      }
+   }
+
+#if ZEND_MM_CACHE_STAT
+   heap-&amp;gt;cache_stat[ZEND_MM_NUM_BUCKETS].miss++;
+#endif
+   //从大内存中查找，这部分逻辑，后续文章会写
+   best_fit = zend_mm_search_large_block(heap, true_size);
+   //如果大内存中也没有找到，且real_size已经超过php内存限制，则到剩余内存中查找
+   if (!best_fit &amp;amp;&amp;amp; heap-&amp;gt;real_size &amp;gt;= heap-&amp;gt;limit - heap-&amp;gt;block_size) {
+      zend_mm_free_block *p = heap-&amp;gt;rest_buckets[0];
+      size_t best_size = -1;
+   //取头节点并循环
+      while (p != ZEND_MM_REST_BUCKET(heap)) {
+         if (UNEXPECTED(ZEND_MM_FREE_BLOCK_SIZE(p) == true_size)) {
+            best_fit = p;
+            goto zend_mm_finished_searching_for_block;
+         } else if (ZEND_MM_FREE_BLOCK_SIZE(p) &amp;gt; true_size &amp;amp;&amp;amp;
+                    ZEND_MM_FREE_BLOCK_SIZE(p) &amp;lt; best_size) {
+            best_size = ZEND_MM_FREE_BLOCK_SIZE(p);
+            best_fit = p;
+         }
+         p = p-&amp;gt;prev_free_block;
+      }
+   }
+   //以上四个区域均未找到
+   if (!best_fit) {
+      if (true_size &amp;gt; heap-&amp;gt;block_size - (ZEND_MM_ALIGNED_SEGMENT_SIZE + ZEND_MM_ALIGNED_HEADER_SIZE)) {//true_size是否大于segment_size(block_size)，小于，则申请segment_size，大于则申请小于true_size的segment_size的整数位
+         /* Make sure we add a memory block which is big enough,
+            segment must have header &amp;quot;size&amp;quot; and trailer &amp;quot;guard&amp;quot; block */
+         segment_size = true_size + ZEND_MM_ALIGNED_SEGMENT_SIZE + ZEND_MM_ALIGNED_HEADER_SIZE;
+         segment_size = (segment_size + (heap-&amp;gt;block_size-1)) &amp;amp; ~(heap-&amp;gt;block_size-1);
+         keep_rest = 1;//如果keep_rest为1，则在后续处理剩余空闲内存时，将其放入剩余内存区域。这里的考虑应该是，当前剩余空闲内存会比较大。而且也会情况也会比较少，所以单独处理放入剩余内存区域(rest_buckets)
+      } else {
+         segment_size = heap-&amp;gt;block_size;
+      }
+	  //校验内存是否超出限制
+      if (segment_size &amp;lt; true_size ||
+          heap-&amp;gt;real_size + segment_size &amp;gt; heap-&amp;gt;limit) {
+         /* Memory limit overflow */
+#if ZEND_MM_CACHE
+         zend_mm_free_cache(heap);
+#endif
+         HANDLE_UNBLOCK_INTERRUPTIONS();
+#if ZEND_DEBUG
+         zend_mm_safe_error(heap, &amp;quot;Allowed memory size of %ld bytes exhausted at %s:%d (tried to allocate %lu bytes)&amp;quot;, heap-&amp;gt;limit, __zend_filename, __zend_lineno, size);
+#else
+         zend_mm_safe_error(heap, &amp;quot;Allowed memory size of %ld bytes exhausted (tried to allocate %lu bytes)&amp;quot;, heap-&amp;gt;limit, size);
+#endif
+      }
+	 //向系统申请内存
+      segment = (zend_mm_segment *) ZEND_MM_STORAGE_ALLOC(segment_size);
+
+      if (!segment) {
+         /* Storage manager cannot allocate memory */
+#if ZEND_MM_CACHE
+         zend_mm_free_cache(heap);
+#endif
+out_of_memory:
+         HANDLE_UNBLOCK_INTERRUPTIONS();
+#if ZEND_DEBUG
+         zend_mm_safe_error(heap, &amp;quot;Out of memory (allocated %ld) at %s:%d (tried to allocate %lu bytes)&amp;quot;, heap-&amp;gt;real_size, __zend_filename, __zend_lineno, size);
+#else
+         zend_mm_safe_error(heap, &amp;quot;Out of memory (allocated %ld) (tried to allocate %lu bytes)&amp;quot;, heap-&amp;gt;real_size, size);
+#endif
+         return NULL;
+      }
+      //更新heap统计字段
+      heap-&amp;gt;real_size += segment_size;
+      if (heap-&amp;gt;real_size &amp;gt; heap-&amp;gt;real_peak) {
+         heap-&amp;gt;real_peak = heap-&amp;gt;real_size;
+      }
+
+      segment-&amp;gt;size = segment_size;
+      segment-&amp;gt;next_segment = heap-&amp;gt;segments_list;
+      heap-&amp;gt;segments_list = segment;
+      //格式化申请的内存 为zend_mm_free_block
+      best_fit = (zend_mm_free_block *) ((char *) segment + ZEND_MM_ALIGNED_SEGMENT_SIZE);
+      ZEND_MM_MARK_FIRST_BLOCK(best_fit);//初始化block中prev字段
+	  //这里最后的ZEND_MM_ALIGNED_HEADER_SIZE是预留在最后的remaining_size使用的
+      block_size = segment_size - ZEND_MM_ALIGNED_SEGMENT_SIZE - ZEND_MM_ALIGNED_HEADER_SIZE;
+	  //初始化新segment的能存末位的 zend_mm_block
+      ZEND_MM_LAST_BLOCK(ZEND_MM_BLOCK_AT(best_fit, block_size));
+
+   } else {
+zend_mm_finished_searching_for_block:
+      /* remove from free list */
+      ZEND_MM_CHECK_MAGIC(best_fit, MEM_BLOCK_FREED);
+      ZEND_MM_CHECK_COOKIE(best_fit);
+      ZEND_MM_CHECK_BLOCK_LINKAGE(best_fit);
+      zend_mm_remove_from_free_list(heap, best_fit);
+
+      block_size = ZEND_MM_FREE_BLOCK_SIZE(best_fit);
+   }
+   //计算使用后的剩余内存
+   remaining_size = block_size - true_size;
+   //如果剩余内存小于block的头部大小，则将其合并到true_size中
+   if (remaining_size &amp;lt; ZEND_MM_ALIGNED_MIN_HEADER_SIZE) {
+      true_size = block_size;
+      ZEND_MM_BLOCK(best_fit, ZEND_MM_USED_BLOCK, true_size);
+   } else {//否则，将剩余内存放入到heap中
+      zend_mm_free_block *new_free_block;
+
+      /* prepare new free block */ 
+      ZEND_MM_BLOCK(best_fit, ZEND_MM_USED_BLOCK, true_size);
+      new_free_block = (zend_mm_free_block *) ZEND_MM_BLOCK_AT(best_fit, true_size);//定位并格式化剩下的空闲内存
+      ZEND_MM_BLOCK(new_free_block, ZEND_MM_FREE_BLOCK, remaining_size);
+
+      /* add the new free block to the free list */
+      if (EXPECTED(!keep_rest)) {//这里请看上面代码中对keep_rest赋值时的解释
+         zend_mm_add_to_free_list(heap, new_free_block);
+      } else {
+         zend_mm_add_to_rest_list(heap, new_free_block);
+      }
+   }
+
+   ZEND_MM_SET_DEBUG_INFO(best_fit, size, 1, 1);
+
+   heap-&amp;gt;size += true_size;
+   if (heap-&amp;gt;peak &amp;lt; heap-&amp;gt;size) {
+      heap-&amp;gt;peak = heap-&amp;gt;size;
+   }
+
+   HANDLE_UNBLOCK_INTERRUPTIONS();
+
+   return ZEND_MM_DATA_OF(best_fit);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以上就是emalloc的所有逻辑了。&lt;/p&gt;
+
+&lt;h4 id=&#34;四个内存区域的区分&#34;&gt;四个内存区域的区分&lt;/h4&gt;
+
+&lt;p&gt;基于64位系统&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;缓存区 cache&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;todo&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;小内存区 free_buckets&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;当申请的内存小于&lt;strong&gt;520b&lt;/strong&gt;时候，放入小内存区。这个数字是怎么来的呢。&lt;/p&gt;
+
+&lt;p&gt;逆推：当申请520b内存是，其true_size内存为520b+16(ZEND_MM_ALIGNED_HEADER_SIZE)=536，那么其实是需要536b大小的内存的。这其中还包含占用32b的&lt;code&gt;zend_mm_small_free_block&lt;/code&gt;结构体&lt;code&gt;zend_mm_small_free_block&lt;/code&gt;大小是固定的，所以不计入index计算，所以小内存区最大存入504b的内存，将504b按照计算index的方式逆推即右移3为则为最大的index值63。&lt;/p&gt;
+
+&lt;p&gt;正推：又因为小内存数组的长度为64*2。这里要看成64组，所以小内存数组的index的最大值63＊2。&lt;/p&gt;
+
+&lt;p&gt;综上，因为小内存数组最大index为63（64位系统），所以其所能存储的最大值&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;大内存区 large_free_buckets&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;不满足&lt;strong&gt;小内存区&lt;/strong&gt;条件和&lt;strong&gt;剩余内存&lt;/strong&gt;条件的放入large_free_buckets&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;剩余内存区&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;当heap中没有合适大小的内存向内核申请时，如果申请的大小大于heap-&amp;gt;block_size。则当有额外剩下的内存时，放入到&lt;strong&gt;剩余内存区rest_bucket&lt;/strong&gt;。举个例子假设heap-&amp;gt;block_size＝256k。如果emalloc申请的大小小于256k，则剩下的内存存入&lt;strong&gt;大内存区large_free_bucket&lt;/strong&gt;，否则 emalloc 申请的大小大于256k时，则剩下的内存存入&lt;strong&gt;剩余内存区rest_buckets&lt;/strong&gt;中&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（二）－常见宏的值</title>
+      <link>http://petrie.github.io/post/2018-04-09-normal-zend-macro-value/</link>
+      <pubDate>Mon, 09 Apr 2018 14:22:25 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-09-normal-zend-macro-value/</guid>
+      
+        <description>&lt;h4 id=&#34;相关宏的定义&#34;&gt;相关宏的定义&lt;/h4&gt;
+
+&lt;p&gt;64位系统非debug模式编译后的&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;#define ZEND_MM_ALIGNMENT 8
+#define ZEND_MM_ALIGNMENT_LOG2 3
+#define ZEND_MM_MIN_SIZE					((ZEND_MM_ALIGNED_MIN_HEADER_SIZE&amp;gt;(ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE))?(ZEND_MM_ALIGNED_MIN_HEADER_SIZE-(ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE)):0) 
+#define ZEND_MM_MAX_SMALL_SIZE				((ZEND_MM_NUM_BUCKETS&amp;lt;&amp;lt;ZEND_MM_ALIGNMENT_LOG2)+ZEND_MM_ALIGNED_MIN_HEADER_SIZE) 
+#define ZEND_MM_ALIGNED_HEADER_SIZE			ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_block)) 
+#define ZEND_MM_ALIGNED_FREE_HEADER_SIZE	ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_small_free_block)) 
+#define ZEND_MM_MIN_ALLOC_BLOCK_SIZE		ZEND_MM_ALIGNED_SIZE(ZEND_MM_ALIGNED_HEADER_SIZE + END_MAGIC_SIZE) 
+#define ZEND_MM_ALIGNED_MIN_HEADER_SIZE		(ZEND_MM_MIN_ALLOC_BLOCK_SIZE&amp;gt;ZEND_MM_ALIGNED_FREE_HEADER_SIZE?ZEND_MM_MIN_ALLOC_BLOCK_SIZE:ZEND_MM_ALIGNED_FREE_HEADER_SIZE) 
+#define ZEND_MM_ALIGNED_SEGMENT_SIZE		ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_segment))  
+#define ZEND_MM_TRUE_SIZE(size)				((size&amp;lt;ZEND_MM_MIN_SIZE)?(ZEND_MM_ALIGNED_MIN_HEADER_SIZE):(ZEND_MM_ALIGNED_SIZE(size+ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE)))
+#define ZEND_MM_SMALL_SIZE(true_size)		(true_size &amp;lt; ZEND_MM_MAX_SMALL_SIZE)
+#define ZEND_MM_BUCKET_INDEX(true_size)		((true_size&amp;gt;&amp;gt;ZEND_MM_ALIGNMENT_LOG2)-(ZEND_MM_ALIGNED_MIN_HEADER_SIZE&amp;gt;&amp;gt;ZEND_MM_ALIGNMENT_LOG2))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;下面依次解释各个宏的含义和作用&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNMENT&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;内存对齐的时候用到，值为8，无特别的逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNMENT_LOG2&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;辅助内存对齐的时候用到，值为3，无特别的逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_MIN_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;值为两个指针的长度，值为16&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_MAX_SMALL_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;小内存块的大小上限，值为544，用于判断但前大小的内存该放入哪种区域（大小内存块）&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNED_HEADER_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;结构体&lt;code&gt;zend_mm_block&lt;/code&gt;占用内存大小，值为16，无特别的逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNED_FREE_HEADER_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;结构体&lt;code&gt;zend_mm_small_free_block&lt;/code&gt;占用内存大小，值为32，无特别的逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_MIN_ALLOC_BLOCK_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;此宏值和ZEND_MM_ALIGNED_HEADER_SIZE一致，值为16，无特别逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNED_MIN_HEADER_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;取ZEND_MM_MIN_ALLOC_BLOCK_SIZE、ZEND_MM_ALIGNED_FREE_HEADER_SIZE中较大的值，值为32，后续计算true_size是会用到。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_TRUE_SIZE&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;如果传入size小于等于16，则返回32。否则返回内存对齐后的size+16&lt;/p&gt;
+
+&lt;h4 id=&#34;zend中打印宏的值&#34;&gt;Zend中打印宏的值&lt;/h4&gt;
+
+&lt;p&gt;代码逻辑见如下：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/php/php-src/blob/PHP-5.6.34/Zend/zend_alloc.c#L1050&#34;&gt;https://github.com/php/php-src/blob/PHP-5.6.34/Zend/zend_alloc.c#L1050&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;	printf(&amp;quot;ZEND_MM_ALIGNMENT=%d\n&amp;quot;, ZEND_MM_ALIGNMENT);
+	printf(&amp;quot;ZEND_MM_ALIGNMENT_LOG2=%d\n&amp;quot;, ZEND_MM_ALIGNMENT_LOG2);
+	printf(&amp;quot;ZEND_MM_MIN_SIZE=%d\n&amp;quot;, ZEND_MM_MIN_SIZE);
+	printf(&amp;quot;ZEND_MM_MAX_SMALL_SIZE=%d\n&amp;quot;, ZEND_MM_MAX_SMALL_SIZE);
+	printf(&amp;quot;ZEND_MM_ALIGNED_HEADER_SIZE=%d\n&amp;quot;, ZEND_MM_ALIGNED_HEADER_SIZE);
+	printf(&amp;quot;ZEND_MM_ALIGNED_FREE_HEADER_SIZE=%d\n&amp;quot;, ZEND_MM_ALIGNED_FREE_HEADER_SIZE);
+	printf(&amp;quot;ZEND_MM_MIN_ALLOC_BLOCK_SIZE=%d\n&amp;quot;, ZEND_MM_MIN_ALLOC_BLOCK_SIZE);
+	printf(&amp;quot;ZEND_MM_ALIGNED_MIN_HEADER_SIZE=%d\n&amp;quot;, ZEND_MM_ALIGNED_MIN_HEADER_SIZE);
+	printf(&amp;quot;ZEND_MM_ALIGNED_SEGMENT_SIZE=%d\n&amp;quot;, ZEND_MM_ALIGNED_SEGMENT_SIZE);
+	for (i = 0; i &amp;lt; ZEND_MM_MAX_SMALL_SIZE; i++) {
+		printf(&amp;quot;%3d%c: %3ld %d %2ld\n&amp;quot;, 
+               i, 
+               (i == ZEND_MM_MIN_SIZE?&#39;*&#39;:&#39; &#39;), 
+               (long)ZEND_MM_TRUE_SIZE(i), 
+               ZEND_MM_SMALL_SIZE(ZEND_MM_TRUE_SIZE(i)), 		
+               (long)ZEND_MM_BUCKET_INDEX(ZEND_MM_TRUE_SIZE(i)));
+	}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在64位系统执行后：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ZEND_MM_ALIGNMENT=8
+ZEND_MM_ALIGNMENT_LOG2=3
+ZEND_MM_MIN_SIZE=16
+ZEND_MM_MAX_SMALL_SIZE=544
+ZEND_MM_ALIGNED_HEADER_SIZE=16
+ZEND_MM_ALIGNED_FREE_HEADER_SIZE=32
+ZEND_MM_MIN_ALLOC_BLOCK_SIZE=16
+ZEND_MM_ALIGNED_MIN_HEADER_SIZE=32
+ZEND_MM_ALIGNED_SEGMENT_SIZE=16
+  0 :  32 1  0
+  1 :  32 1  0
+  2 :  32 1  0
+  3 :  32 1  0
+  4 :  32 1  0
+  5 :  32 1  0
+  6 :  32 1  0
+  7 :  32 1  0
+  8 :  32 1  0
+  9 :  32 1  0
+ 10 :  32 1  0
+ 11 :  32 1  0
+ 12 :  32 1  0
+ 13 :  32 1  0
+ 14 :  32 1  0
+ 15 :  32 1  0
+ 16*:  32 1  0
+ 17 :  40 1  1
+ 18 :  40 1  1
+ 19 :  40 1  1
+ 20 :  40 1  1
+ 21 :  40 1  1
+ 22 :  40 1  1
+ 23 :  40 1  1
+ 24 :  40 1  1
+ 25 :  48 1  2
+ 26 :  48 1  2
+ 27 :  48 1  2
+ 28 :  48 1  2
+ 29 :  48 1  2
+ 30 :  48 1  2
+ 31 :  48 1  2
+ 32 :  48 1  2
+ 33 :  56 1  3
+ 34 :  56 1  3
+ 35 :  56 1  3
+ 36 :  56 1  3
+ 37 :  56 1  3
+ 38 :  56 1  3
+ 39 :  56 1  3
+ 40 :  56 1  3
+ 41 :  64 1  4
+ 42 :  64 1  4
+ 43 :  64 1  4
+ 44 :  64 1  4
+ 45 :  64 1  4
+ 46 :  64 1  4
+ 47 :  64 1  4
+ 48 :  64 1  4
+ 49 :  72 1  5
+ 50 :  72 1  5
+ 51 :  72 1  5
+ 52 :  72 1  5
+ 53 :  72 1  5
+ 54 :  72 1  5
+ 55 :  72 1  5
+ 56 :  72 1  5
+ 57 :  80 1  6
+ 58 :  80 1  6
+ 59 :  80 1  6
+ 60 :  80 1  6
+ 61 :  80 1  6
+ 62 :  80 1  6
+ 63 :  80 1  6
+ 64 :  80 1  6
+ 65 :  88 1  7
+ 66 :  88 1  7
+ 67 :  88 1  7
+ 68 :  88 1  7
+ 69 :  88 1  7
+ 70 :  88 1  7
+ 71 :  88 1  7
+ 72 :  88 1  7
+ 73 :  96 1  8
+ 74 :  96 1  8
+ 75 :  96 1  8
+ 76 :  96 1  8
+ 77 :  96 1  8
+ 78 :  96 1  8
+ 79 :  96 1  8
+ 80 :  96 1  8
+ 81 : 104 1  9
+ 82 : 104 1  9
+ 83 : 104 1  9
+ 84 : 104 1  9
+ 85 : 104 1  9
+ 86 : 104 1  9
+ 87 : 104 1  9
+ 88 : 104 1  9
+ 89 : 112 1 10
+ 90 : 112 1 10
+ 91 : 112 1 10
+ 92 : 112 1 10
+ 93 : 112 1 10
+ 94 : 112 1 10
+ 95 : 112 1 10
+ 96 : 112 1 10
+ 97 : 120 1 11
+ 98 : 120 1 11
+ 99 : 120 1 11
+100 : 120 1 11
+101 : 120 1 11
+102 : 120 1 11
+103 : 120 1 11
+104 : 120 1 11
+105 : 128 1 12
+106 : 128 1 12
+107 : 128 1 12
+108 : 128 1 12
+109 : 128 1 12
+110 : 128 1 12
+111 : 128 1 12
+112 : 128 1 12
+113 : 136 1 13
+114 : 136 1 13
+115 : 136 1 13
+116 : 136 1 13
+117 : 136 1 13
+118 : 136 1 13
+119 : 136 1 13
+120 : 136 1 13
+121 : 144 1 14
+122 : 144 1 14
+123 : 144 1 14
+124 : 144 1 14
+125 : 144 1 14
+126 : 144 1 14
+127 : 144 1 14
+128 : 144 1 14
+129 : 152 1 15
+130 : 152 1 15
+131 : 152 1 15
+132 : 152 1 15
+133 : 152 1 15
+134 : 152 1 15
+135 : 152 1 15
+136 : 152 1 15
+137 : 160 1 16
+138 : 160 1 16
+139 : 160 1 16
+140 : 160 1 16
+141 : 160 1 16
+142 : 160 1 16
+143 : 160 1 16
+144 : 160 1 16
+145 : 168 1 17
+146 : 168 1 17
+147 : 168 1 17
+148 : 168 1 17
+149 : 168 1 17
+150 : 168 1 17
+151 : 168 1 17
+152 : 168 1 17
+153 : 176 1 18
+154 : 176 1 18
+155 : 176 1 18
+156 : 176 1 18
+157 : 176 1 18
+158 : 176 1 18
+159 : 176 1 18
+160 : 176 1 18
+161 : 184 1 19
+162 : 184 1 19
+163 : 184 1 19
+164 : 184 1 19
+165 : 184 1 19
+166 : 184 1 19
+167 : 184 1 19
+168 : 184 1 19
+169 : 192 1 20
+170 : 192 1 20
+171 : 192 1 20
+172 : 192 1 20
+173 : 192 1 20
+174 : 192 1 20
+175 : 192 1 20
+176 : 192 1 20
+177 : 200 1 21
+178 : 200 1 21
+179 : 200 1 21
+180 : 200 1 21
+181 : 200 1 21
+182 : 200 1 21
+183 : 200 1 21
+184 : 200 1 21
+185 : 208 1 22
+186 : 208 1 22
+187 : 208 1 22
+188 : 208 1 22
+189 : 208 1 22
+190 : 208 1 22
+191 : 208 1 22
+192 : 208 1 22
+193 : 216 1 23
+194 : 216 1 23
+195 : 216 1 23
+196 : 216 1 23
+197 : 216 1 23
+198 : 216 1 23
+199 : 216 1 23
+200 : 216 1 23
+201 : 224 1 24
+202 : 224 1 24
+203 : 224 1 24
+204 : 224 1 24
+205 : 224 1 24
+206 : 224 1 24
+207 : 224 1 24
+208 : 224 1 24
+209 : 232 1 25
+210 : 232 1 25
+211 : 232 1 25
+212 : 232 1 25
+213 : 232 1 25
+214 : 232 1 25
+215 : 232 1 25
+216 : 232 1 25
+217 : 240 1 26
+218 : 240 1 26
+219 : 240 1 26
+220 : 240 1 26
+221 : 240 1 26
+222 : 240 1 26
+223 : 240 1 26
+224 : 240 1 26
+225 : 248 1 27
+226 : 248 1 27
+227 : 248 1 27
+228 : 248 1 27
+229 : 248 1 27
+230 : 248 1 27
+231 : 248 1 27
+232 : 248 1 27
+233 : 256 1 28
+234 : 256 1 28
+235 : 256 1 28
+236 : 256 1 28
+237 : 256 1 28
+238 : 256 1 28
+239 : 256 1 28
+240 : 256 1 28
+241 : 264 1 29
+242 : 264 1 29
+243 : 264 1 29
+244 : 264 1 29
+245 : 264 1 29
+246 : 264 1 29
+247 : 264 1 29
+248 : 264 1 29
+249 : 272 1 30
+250 : 272 1 30
+251 : 272 1 30
+252 : 272 1 30
+253 : 272 1 30
+254 : 272 1 30
+255 : 272 1 30
+256 : 272 1 30
+257 : 280 1 31
+258 : 280 1 31
+259 : 280 1 31
+260 : 280 1 31
+261 : 280 1 31
+262 : 280 1 31
+263 : 280 1 31
+264 : 280 1 31
+265 : 288 1 32
+266 : 288 1 32
+267 : 288 1 32
+268 : 288 1 32
+269 : 288 1 32
+270 : 288 1 32
+271 : 288 1 32
+272 : 288 1 32
+273 : 296 1 33
+274 : 296 1 33
+275 : 296 1 33
+276 : 296 1 33
+277 : 296 1 33
+278 : 296 1 33
+279 : 296 1 33
+280 : 296 1 33
+281 : 304 1 34
+282 : 304 1 34
+283 : 304 1 34
+284 : 304 1 34
+285 : 304 1 34
+286 : 304 1 34
+287 : 304 1 34
+288 : 304 1 34
+289 : 312 1 35
+290 : 312 1 35
+291 : 312 1 35
+292 : 312 1 35
+293 : 312 1 35
+294 : 312 1 35
+295 : 312 1 35
+296 : 312 1 35
+297 : 320 1 36
+298 : 320 1 36
+299 : 320 1 36
+300 : 320 1 36
+301 : 320 1 36
+302 : 320 1 36
+303 : 320 1 36
+304 : 320 1 36
+305 : 328 1 37
+306 : 328 1 37
+307 : 328 1 37
+308 : 328 1 37
+309 : 328 1 37
+310 : 328 1 37
+311 : 328 1 37
+312 : 328 1 37
+313 : 336 1 38
+314 : 336 1 38
+315 : 336 1 38
+316 : 336 1 38
+317 : 336 1 38
+318 : 336 1 38
+319 : 336 1 38
+320 : 336 1 38
+321 : 344 1 39
+322 : 344 1 39
+323 : 344 1 39
+324 : 344 1 39
+325 : 344 1 39
+326 : 344 1 39
+327 : 344 1 39
+328 : 344 1 39
+329 : 352 1 40
+330 : 352 1 40
+331 : 352 1 40
+332 : 352 1 40
+333 : 352 1 40
+334 : 352 1 40
+335 : 352 1 40
+336 : 352 1 40
+337 : 360 1 41
+338 : 360 1 41
+339 : 360 1 41
+340 : 360 1 41
+341 : 360 1 41
+342 : 360 1 41
+343 : 360 1 41
+344 : 360 1 41
+345 : 368 1 42
+346 : 368 1 42
+347 : 368 1 42
+348 : 368 1 42
+349 : 368 1 42
+350 : 368 1 42
+351 : 368 1 42
+352 : 368 1 42
+353 : 376 1 43
+354 : 376 1 43
+355 : 376 1 43
+356 : 376 1 43
+357 : 376 1 43
+358 : 376 1 43
+359 : 376 1 43
+360 : 376 1 43
+361 : 384 1 44
+362 : 384 1 44
+363 : 384 1 44
+364 : 384 1 44
+365 : 384 1 44
+366 : 384 1 44
+367 : 384 1 44
+368 : 384 1 44
+369 : 392 1 45
+370 : 392 1 45
+371 : 392 1 45
+372 : 392 1 45
+373 : 392 1 45
+374 : 392 1 45
+375 : 392 1 45
+376 : 392 1 45
+377 : 400 1 46
+378 : 400 1 46
+379 : 400 1 46
+380 : 400 1 46
+381 : 400 1 46
+382 : 400 1 46
+383 : 400 1 46
+384 : 400 1 46
+385 : 408 1 47
+386 : 408 1 47
+387 : 408 1 47
+388 : 408 1 47
+389 : 408 1 47
+390 : 408 1 47
+391 : 408 1 47
+392 : 408 1 47
+393 : 416 1 48
+394 : 416 1 48
+395 : 416 1 48
+396 : 416 1 48
+397 : 416 1 48
+398 : 416 1 48
+399 : 416 1 48
+400 : 416 1 48
+401 : 424 1 49
+402 : 424 1 49
+403 : 424 1 49
+404 : 424 1 49
+405 : 424 1 49
+406 : 424 1 49
+407 : 424 1 49
+408 : 424 1 49
+409 : 432 1 50
+410 : 432 1 50
+411 : 432 1 50
+412 : 432 1 50
+413 : 432 1 50
+414 : 432 1 50
+415 : 432 1 50
+416 : 432 1 50
+417 : 440 1 51
+418 : 440 1 51
+419 : 440 1 51
+420 : 440 1 51
+421 : 440 1 51
+422 : 440 1 51
+423 : 440 1 51
+424 : 440 1 51
+425 : 448 1 52
+426 : 448 1 52
+427 : 448 1 52
+428 : 448 1 52
+429 : 448 1 52
+430 : 448 1 52
+431 : 448 1 52
+432 : 448 1 52
+433 : 456 1 53
+434 : 456 1 53
+435 : 456 1 53
+436 : 456 1 53
+437 : 456 1 53
+438 : 456 1 53
+439 : 456 1 53
+440 : 456 1 53
+441 : 464 1 54
+442 : 464 1 54
+443 : 464 1 54
+444 : 464 1 54
+445 : 464 1 54
+446 : 464 1 54
+447 : 464 1 54
+448 : 464 1 54
+449 : 472 1 55
+450 : 472 1 55
+451 : 472 1 55
+452 : 472 1 55
+453 : 472 1 55
+454 : 472 1 55
+455 : 472 1 55
+456 : 472 1 55
+457 : 480 1 56
+458 : 480 1 56
+459 : 480 1 56
+460 : 480 1 56
+461 : 480 1 56
+462 : 480 1 56
+463 : 480 1 56
+464 : 480 1 56
+465 : 488 1 57
+466 : 488 1 57
+467 : 488 1 57
+468 : 488 1 57
+469 : 488 1 57
+470 : 488 1 57
+471 : 488 1 57
+472 : 488 1 57
+473 : 496 1 58
+474 : 496 1 58
+475 : 496 1 58
+476 : 496 1 58
+477 : 496 1 58
+478 : 496 1 58
+479 : 496 1 58
+480 : 496 1 58
+481 : 504 1 59
+482 : 504 1 59
+483 : 504 1 59
+484 : 504 1 59
+485 : 504 1 59
+486 : 504 1 59
+487 : 504 1 59
+488 : 504 1 59
+489 : 512 1 60
+490 : 512 1 60
+491 : 512 1 60
+492 : 512 1 60
+493 : 512 1 60
+494 : 512 1 60
+495 : 512 1 60
+496 : 512 1 60
+497 : 520 1 61
+498 : 520 1 61
+499 : 520 1 61
+500 : 520 1 61
+501 : 520 1 61
+502 : 520 1 61
+503 : 520 1 61
+504 : 520 1 61
+505 : 528 1 62
+506 : 528 1 62
+507 : 528 1 62
+508 : 528 1 62
+509 : 528 1 62
+510 : 528 1 62
+511 : 528 1 62
+512 : 528 1 62
+513 : 536 1 63
+514 : 536 1 63
+515 : 536 1 63
+516 : 536 1 63
+517 : 536 1 63
+518 : 536 1 63
+519 : 536 1 63
+520 : 536 1 63
+521 : 544 0 64
+522 : 544 0 64
+523 : 544 0 64
+524 : 544 0 64
+525 : 544 0 64
+526 : 544 0 64
+527 : 544 0 64
+528 : 544 0 64
+529 : 552 0 65
+530 : 552 0 65
+531 : 552 0 65
+532 : 552 0 65
+533 : 552 0 65
+534 : 552 0 65
+535 : 552 0 65
+536 : 552 0 65
+537 : 560 0 66
+538 : 560 0 66
+539 : 560 0 66
+540 : 560 0 66
+541 : 560 0 66
+542 : 560 0 66
+543 : 560 0 66
+&lt;/code&gt;&lt;/pre&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM(一)－基本概念、数据结构和相关初始化函数</title>
+      <link>http://petrie.github.io/post/2018-04-08-php-zend-memory-manager/</link>
+      <pubDate>Sun, 08 Apr 2018 06:06:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-08-php-zend-memory-manager/</guid>
+      
+        <description>&lt;h4 id=&#34;基本概念&#34;&gt;基本概念&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://flykobe.com/wp-content/uploads/2015/03/php-zend-memory-manager.jpg&#34; alt=&#34;ZZM架构图&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如上图所示，中间部分的zend memory manage由接口层、heap层、存储层(storage)组成。内存管理的主要逻辑在heap层中，后续主要讲解相关的数据结构和函数流程。&lt;/p&gt;
+
+&lt;h4 id=&#34;基本数据结构&#34;&gt;基本数据结构&lt;/h4&gt;
+
+&lt;p&gt;基于PHP-5.6&lt;/p&gt;
+
+&lt;h5 id=&#34;zend-mm-block-info&#34;&gt;zend_mm_block_info&lt;/h5&gt;
+
+&lt;p&gt;_zend_mm_block_info是ZMM内存管理中最小的数据单元。各字段含义见代码注释&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;typedef struct _zend_mm_block_info {
+#if ZEND_MM_COOKIES
+   size_t _cookie;
+#endif
+   size_t _size;
+   size_t _prev;
+} zend_mm_block_info;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h5 id=&#34;zend-mm-block&#34;&gt;zend_mm_block&lt;/h5&gt;
+
+&lt;p&gt;zend_mm_block 对zend_mm_block_info做了一层封装，增加了一些条件编译字段，在相关编译选项关闭后，其和zend_mm_block_info是存储的内容是完全一致的&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;typedef struct _zend_mm_block {
+   zend_mm_block_info info;
+#if ZEND_DEBUG
+   unsigned int magic;
+# ifdef ZTS
+   THREAD_T thread_id;
+# endif
+   zend_mm_debug_info debug;
+#elif ZEND_MM_HEAP_PROTECTION
+   zend_mm_debug_info debug;
+#endif
+} zend_mm_block;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h5 id=&#34;zend-mm-heap&#34;&gt;_zend_mm_heap&lt;/h5&gt;
+
+&lt;p&gt;_zend_mm_heap是ZMM的核心数据结构，ZMM的基本所有数据都和这个结构体相关&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;struct _zend_mm_heap {
+   int                 use_zend_alloc;
+   void               *(*_malloc)(size_t);
+   void                (*_free)(void*);
+   void               *(*_realloc)(void*, size_t);
+   size_t              free_bitmap;
+   size_t              large_free_bitmap;
+   size_t              block_size;
+   size_t              compact_size;
+   zend_mm_segment    *segments_list;
+   zend_mm_storage    *storage;
+   size_t              real_size;
+   size_t              real_peak;
+   size_t              limit;
+   size_t              size;
+   size_t              peak;
+   size_t              reserve_size;
+   void               *reserve;
+   int                 overflow;
+   int                 internal;
+#if ZEND_MM_CACHE
+   unsigned int        cached;
+   zend_mm_free_block *cache[ZEND_MM_NUM_BUCKETS];
+#endif
+   zend_mm_free_block *free_buckets[ZEND_MM_NUM_BUCKETS*2];
+   zend_mm_free_block *large_free_buckets[ZEND_MM_NUM_BUCKETS];
+   zend_mm_free_block *rest_buckets[2];
+   int                 rest_count;
+#if ZEND_MM_CACHE_STAT
+   struct {
+      int count;
+      int max_count;
+      int hit;
+      int miss;
+   } cache_stat[ZEND_MM_NUM_BUCKETS+1];
+#endif
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;zmm初始化&#34;&gt;ZMM初始化&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-flow&#34;&gt;st=&amp;gt;start:   Start   |past:&amp;gt;http://www.google.com[blank]
+e=&amp;gt;end: End:&amp;gt;http://www.google.com
+op1=&amp;gt;operation: My Operation|past
+op2=&amp;gt;operation: Stuff|current
+sub1=&amp;gt;subroutine: My Subroutine|invalid
+cond=&amp;gt;condition: Yes or No?|approved:&amp;gt;http://www.google.com
+c2=&amp;gt;condition: Good idea|rejected
+io=&amp;gt;inputoutput: catch something...|request
+startzmm=&amp;gt;operation: start_memory_manager ()
+at php-src/sapi/cli/php_cli.c:1362 |past
+alloc_globals_ctor=&amp;gt;operation: alloc_globals_ctor () 
+at /home/vagrant/php-src/Zend/zend_alloc.c:2742 |past
+zend_mm_startup=&amp;gt;operation: zend_mm_startup () 
+at /home/vagrant/php-src/Zend/zend_alloc.c:1221
+为初始化管理器做一些准备，如获取设置seg_size(块大小)
+zend_mm_startup_ex=&amp;gt;operation: zend_mm_startup_ex () 
+at /home/vagrant/php-src/Zend/zend_alloc.c:1110
+初始化storge和heap结构体中各个字段
+zend_mm_init=&amp;gt;operation: zend_mm_init()
+at /home/vagrant/php-src/Zend/zend_alloc.c:911
+初始化heap中的四种内存块：缓存、小内存、大内存、剩余内存
+
+st-&amp;gt;startzmm-&amp;gt;alloc_globals_ctor-&amp;gt;zend_mm_startup-&amp;gt;zend_mm_startup_ex-&amp;gt;zend_mm_init-&amp;gt;e
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;zend-mm-init小内存初始化流程详解&#34;&gt;zend_mm_init小内存初始化流程详解&lt;/h4&gt;
+
+&lt;p&gt;这部分鸟哥曾经写过相关文章，但我第一次看的时候基本看蒙，后来通过看源码和gdb调试才搞明白。其在heap中定义如下。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;struct _zend_mm_heap {
+   ...
+   zend_mm_free_block *free_buckets[ZEND_MM_NUM_BUCKETS*2];
+   ...
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;free_buckets初始化代码如下，其中ZEND_MM_SMALL_FREE_BUCKET取出对应index的元素&lt;strong&gt;p&lt;/strong&gt;，随后直接访问&lt;strong&gt;next_free_block&lt;/strong&gt;,我在这里的主要疑问是，heap-&amp;gt;free_buckets是一个指针数组，且没有用malloc初始化过，为什么可以直接访问其next_free_block属性呢？&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;...
+p = ZEND_MM_SMALL_FREE_BUCKET(heap, 0);
+for (i = 0; i &amp;lt; ZEND_MM_NUM_BUCKETS; i++) {
+   p-&amp;gt;next_free_block = p;
+   p-&amp;gt;prev_free_block = p;
+   p = (zend_mm_free_block*)((char*)p + sizeof(zend_mm_free_block*) * 2);
+}
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ZEND_MM_SMALL_FREE_BUCKET定义如下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;#define ZEND_MM_SMALL_FREE_BUCKET(heap, index) \
+   (zend_mm_free_block*) ((char*)&amp;amp;heap-&amp;gt;free_buckets[index * 2] + \
+      sizeof(zend_mm_free_block*) * 2 - \
+      sizeof(zend_mm_small_free_block))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;鸟哥的解释如下: &lt;a href=&#34;http://www.laruence.com/2011/11/09/2277.html&#34;&gt;转自&lt;/a&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;这是因为, PHP在这处使用了一个技巧, 用一个定长的数组来存储ZEND_MM_NUMBER_BUCKET个zend_mm_free_block, 如上图中红色框所示. 对于一个没有被使用的free_buckets的元素, 唯一有用的数据结构就是next_free_block和prev_free_block, 所以, 为了节省内存, PHP并没有分配ZEND_MM_NUMBER_BUCKET * sizeof(zend_mm_free_block)大小的内存, 而只是用了ZEND_MM_NUMBER_BUCKET * (sizeof(*next_free_block) + sizeof(*prev_free_block))大小的内存.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;strong&gt;其中对于heap-&amp;gt;free_buckets这个定长数组的长度描述是不对的,不是ZEND_MM_NUMBER_BUCKET而是ZEND_MM_NUM_BUCKETS＊2。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;下面解释下ZEND_MM_SMALL_FREE_BUCKET，在64为系统中，假设index＝3，代入到ZEND_MM_SMALL_FREE_BUCKET中展开为&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;//宏定义
+ZEND_MM_SMALL_FREE_BUCKET(heap, index) \
+   (zend_mm_free_block*) ((char*)&amp;amp;heap-&amp;gt;free_buckets[index * 2] + \
+      sizeof(zend_mm_free_block*) * 2 - \  // 8*2
+      sizeof(zend_mm_small_free_block))	//32
+//代入index并计算几个sizeof的值
+  ZEND_MM_SMALL_FREE_BUCKET(heap, 3)\
+	   (zend_mm_free_block*) ((char*)&amp;amp;heap-&amp;gt;free_buckets[3 * 2] + \
+     	8 * 2 - \
+	    32)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;计算后的最终值为 &lt;code&gt;(zend_mm_free_block*) ((char*)&amp;amp;heap-&amp;gt;free_buckets[3 * 2] -16)&lt;/code&gt;，这里假设&lt;code&gt;&amp;amp;heap-&amp;gt;free_buckets[3 * 2]&lt;/code&gt;的值为&lt;code&gt;0xe89028&lt;/code&gt;,那么&lt;code&gt;(char*)&amp;amp;heap-&amp;gt;free_buckets[3 * 2] -16&lt;/code&gt;的值为&lt;code&gt;0xe89018&lt;/code&gt;，所以宏ZEND_MM_SMALL_FREE_BUCKET的返回值就为 &lt;code&gt;(zend_mm_free_block*)0xe89018&lt;/code&gt;，这个值也是&lt;code&gt;heap-&amp;gt;free_buckets[2 * 2]&lt;/code&gt;的地址，注意，这并不是巧合。宏ZEND_MM_SMALL_FREE_BUCKET返回后的代码逻辑如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;...
+p = ZEND_MM_SMALL_FREE_BUCKET(heap, 0);
+for (i = 0; i &amp;lt; ZEND_MM_NUM_BUCKETS; i++) {
+   p-&amp;gt;next_free_block = p;
+   p-&amp;gt;prev_free_block = p;
+   p = (zend_mm_free_block*)((char*)p + sizeof(zend_mm_free_block*) * 2);
+}
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以看到这里只用到了&lt;code&gt;p&lt;/code&gt;的&lt;code&gt;next_free_block&lt;/code&gt;和&lt;code&gt;prev_free_block&lt;/code&gt;，并没有对其他变量的访问。这里再回忆下&lt;code&gt;zend_mm_free_block&lt;/code&gt;的定义。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;typedef struct _zend_mm_free_block {
+	zend_mm_block_info info;
+#if ZEND_DEBUG
+	unsigned int magic;
+# ifdef ZTS
+	THREAD_T thread_id;
+# endif
+#endif
+	struct _zend_mm_free_block *prev_free_block;
+	struct _zend_mm_free_block *next_free_block;
+
+	struct _zend_mm_free_block **parent;
+	struct _zend_mm_free_block *child[2];
+} zend_mm_free_block;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这里可以看到结构体&lt;code&gt;zend_mm_free_block&lt;/code&gt;中&lt;code&gt;zend_mm_block_info&lt;/code&gt;占据16个字节，和&lt;code&gt;heap-&amp;gt;free_buckets[3 * 2] - heap-&amp;gt;free_buckets[2 * 2]&lt;/code&gt;相等。所以，访问&lt;code&gt;p-&amp;gt;prev_free_block&lt;/code&gt;和访问&lt;code&gt;heap-&amp;gt;free_buckets[3*2]&lt;/code&gt;是一致的，访问&lt;code&gt;p-&amp;gt;next_free_block&lt;/code&gt;和访问&lt;code&gt;heap-&amp;gt;free_buckets[3*2+1]&lt;/code&gt;是一致的。在访问&lt;code&gt;index＝3&lt;/code&gt;的元素时，&lt;code&gt;heap-&amp;gt;free_buckets[3 * 2]&lt;/code&gt;到 &lt;code&gt;heap-&amp;gt;free_buckets[2 * 2]&lt;/code&gt;的16个字节可以看成是存储&lt;code&gt;index＝3&lt;/code&gt;元素&lt;code&gt;zend_mm_block_info info;&lt;/code&gt;但这个info字段zend memory manager 并不会也不应该被用到。对于小内存的处理就是利用这个技巧，节约了内存。&lt;/p&gt;
+
+&lt;p&gt;看明白了这些，再回头看小内存初始化的代码，就很简单了&lt;/p&gt;
+
+&lt;h4 id=&#34;总结&#34;&gt;总结&lt;/h4&gt;
+
+&lt;p&gt;本文大致介绍了ZMM较基本的偏概念的一些东西，对于小内存的初始化做了较为深入的讲解。这块开始理解起来会比较困难，建议配合gdb调试PHP查看heap-&amp;gt;free_buckets相关内存地址配合理解。&lt;/p&gt;
+
+&lt;h4 id=&#34;参考&#34;&gt;参考&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://flykobe.com/index.php/2015/03/04/php%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/&#34;&gt;http://flykobe.com/index.php/2015/03/04/php%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.cnblogs.com/taek/p/4229869.html&#34;&gt;http://www.cnblogs.com/taek/p/4229869.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.laruence.com/2011/11/09/2277.html&#34;&gt;http://www.laruence.com/2011/11/09/2277.html&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP扩展开发－自动生成扩展骨架</title>
+      <link>http://petrie.github.io/post/2018-03-29-first-php-extension/</link>
+      <pubDate>Thu, 29 Mar 2018 03:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-03-29-first-php-extension/</guid>
+      
+        <description>&lt;p&gt;PHP扩展编译有两种方式&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;作为一个可装载模块或者DSO（动态共享对象）&lt;/li&gt;
+&lt;li&gt;静态编译到PHP&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;静态编译的方式直接和PHP编译到一起，步骤比较简单，但每次变更代码都要编译这个PHP代码，非常耗时，所以这里采用第二种方式&lt;/p&gt;
+
+&lt;h4 id=&#34;开发环境&#34;&gt;开发环境&lt;/h4&gt;
+
+&lt;p&gt;本文脚本命令仅在以下环境测试成功&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;操作系统：CentOS 6.9
+PHP版本：PHP-7.1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;安装开发工具包&#34;&gt;安装开发工具包&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;yum groupinstall -y &#39;Development Tools&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;下载php源码&#34;&gt;下载PHP源码&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;git clone http://git.php.net/repository/php-src.git
+git checkout PHP-7.1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;安装依赖&#34;&gt;安装依赖&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;sudo yum install  libxml2-devel
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;编译安装php&#34;&gt;编译安装php&lt;/h4&gt;
+
+&lt;p&gt;安装到~/php7.1目录下，以免覆盖系统已安装的PHP&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./buildconf
+./configure --prefix=$HOME/php7.1 --enable-debug --enable-maintainer-zts
+make &amp;amp;&amp;amp; make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;生成扩展框架&#34;&gt;生成扩展框架&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;cd $HOME/php-src/ext
+$HOME/php-src/ext/ext_skel --extname=testex
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;编辑-config-m4&#34;&gt;编辑&lt;code&gt;config.m4&lt;/code&gt;&lt;/h4&gt;
+
+&lt;p&gt;去掉&lt;code&gt;config.m4&lt;/code&gt;文件中第16、18行前的dnl注释&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt; 16 PHP_ARG_ENABLE(testex, whether to enable testex support,
+ 17 dnl Make sure that the comment is aligned:
+ 18 [  --enable-testex           Enable testex support])
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;编译扩展&#34;&gt;编译扩展&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;cd $HOME/php-src/ext/testex
+$HOME/php7.1/bin/phpize
+./configure --with-php-config=$HOME/php7.1/bin/php-config
+make &amp;amp;&amp;amp; make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;测试扩展&#34;&gt;测试扩展&lt;/h4&gt;
+
+&lt;p&gt;ext_skel脚本生成的扩展已包含confirm_testex_compiled函数，所以我们用它坐测试&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$HOME/php7.1/bin/php -dextension=$HOME/php7.1/lib/php/extensions/debug-zts-20160303/testex.so -r &amp;quot;echo confirm_testex_compiled(&#39;1&#39;);&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;总结&#34;&gt;总结&lt;/h4&gt;
+
+&lt;p&gt;本文只是用php源码自带的ext_skel生成扩展框架，测试编译和安装。扩展不包含任何功能。如果想加入更多功能，可以参考&lt;a href=&#34;http://www.phpinternalsbook.com/&#34;&gt;http://www.phpinternalsbook.com/&lt;/a&gt;&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>如何独立的使用Laravel的IOC功能</title>
+      <link>http://petrie.github.io/post/2018-03-21-laravel-ioc/</link>
+      <pubDate>Wed, 21 Mar 2018 05:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-03-21-laravel-ioc/</guid>
+      
+        <description>&lt;p&gt;Laravel拥有一个强大的IOC/DI容器。且可以独立于Laravel使用。本文介绍如何单独使用Laravel的container组件&lt;/p&gt;
+
+&lt;h3 id=&#34;准备工作&#34;&gt;准备工作&lt;/h3&gt;
+
+&lt;p&gt;在家目录下新建测试目录&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;mkdir ~/test-laravel-ioc &amp;amp;&amp;amp; cd &amp;quot;$_&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;下载container源码&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;composer require illuminate/container
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;新建测试文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;touch container01.php &amp;amp;&amp;amp; vim &amp;quot;$_&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;加载container&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;#file container01.php
+&amp;lt;?php
+require vendor/autoload.php
+use Illuminate\Container\Container;
+
+$container = Container::getInstance();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;执行&lt;code&gt;container01.php&lt;/code&gt;，无报错则说明加载成功&lt;/p&gt;
+
+&lt;h3 id=&#34;测试container基本功能&#34;&gt;测试Container基本功能&lt;/h3&gt;
+
+&lt;p&gt;新建测试文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;touch container02.php &amp;amp;&amp;amp; vim &amp;quot;$_&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用container的make方法新建MyClass对象并执行其中的echo方法&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;#file container02.php
+&amp;lt;?php
+require vendor/autoload.php
+use Illuminate\Container\Container;
+
+class MyClass
+{
+    public function __construct()
+    {
+    }
+    public function echo()
+    {
+      echo &#39;testecho&#39;;
+    }
+}
+
+$container = Container::getInstance();
+$instance = $container-&amp;gt;make(MyClass::class);
+$instance-&amp;gt;echo();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;运行结果&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;% php container02.php
+testecho
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;显示如上结果则说明容器成功实例话了对象。&lt;/p&gt;
+
+&lt;h3 id=&#34;参考&#34;&gt;参考&lt;/h3&gt;
+
+&lt;p&gt;更多容器功能参见官方文档&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://laravel.com/docs/5.4/container&#34;&gt;Laravel IOC 官方文档&lt;/a&gt;
+&lt;a href=&#34;https://gist.github.com/davejamesmiller/bd857d9b0ac895df7604dd2e63b23afe&#34;&gt;https://gist.github.com/davejamesmiller/bd857d9b0ac895df7604dd2e63b23afe&lt;/a&gt;&lt;/p&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP设置连接mysql超时时间</title>
+      <link>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</link>
+      <pubDate>Sun, 04 Jun 2017 20:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</guid>
+      
+        <description>&lt;p&gt;本文将分别介绍PHP的mysql扩展, mysqli扩展, mysql_pdo扩展,mysqlnd扩展和libmysql 这些名词的含义。以及他们之间的关系。最后再介绍如何配置mysql的超时时间。&lt;/p&gt;
+
+&lt;h1 id=&#34;一-mysql-mysqli-mysql-pdo-mysqlnd扩展&#34;&gt;一、mysql,mysqli,mysql_pdo,mysqlnd扩展&lt;/h1&gt;
+
+&lt;p&gt;当考虑连接到MySQL数据库服务器的时候，有三种主要的API可供选择：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;PHP的MySQL扩展&lt;/li&gt;
+&lt;li&gt;PHP的mysqli扩展&lt;/li&gt;
+&lt;li&gt;PHP数据对象(PDO)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;三者都有各自的优缺点。下面的讨论就是为了对每种API的关键方面给出一个简短的介绍。&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是php的mysql扩展-废弃&#34;&gt;&lt;em&gt;什么是PHP的MySQL扩展?&lt;/em&gt;(废弃)&lt;/h2&gt;
+
+&lt;p&gt;这是设计开发允许PHP应用与MySQL数据库交互的早期扩展。*mysql*扩展提供了一个面向过程 的接口，并且是针对MySQL4.1.3或更早版本设计的。因此，这个扩展虽然可以与MySQL4.1.3或更新的数据库服务端 进行交互，但并不支持后期MySQL服务端提供的一些特性。&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是php的mysql-pdo扩展&#34;&gt;&lt;em&gt;什么是PHP的mysql_pdo扩展&lt;/em&gt;&lt;/h2&gt;
+
+&lt;p&gt;*PHP 数据对象* （PDO） 扩展为PHP访问数据库定义了一个轻量级的一致接口。实现 PDO 接口的每个数据库驱动可以公开具体数据库的特性作为标准扩展功能。 注意利用 PDO 扩展自身并不能实现任何数据库功能；必须使用一个 具体数据库的 PDO 驱动 来访问数据库服务。&lt;/p&gt;
+
+&lt;p&gt;PDO 提供了一个 *数据访问* 抽象层，这意味着，不管使用哪种数据库，都可以用相同的函数（方法）来查询和获取数据。 PDO *不*提供 *数据库* 抽象层；它不会重写 SQL，也不会模拟缺失的特性。如果需要的话，应该使用一个成熟的抽象层。&lt;/p&gt;
+
+&lt;p&gt;从 PHP 5.1 开始附带了 PDO，在 PHP 5.0 中是作为一个 PECL 扩展使用。 PDO 需要PHP 5 核心的新 OO 特性，因此不能在较早版本的 PHP 上运行。&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是php的mysqli扩展&#34;&gt;什么是PHP的mysqli扩展&lt;/h2&gt;
+
+&lt;p&gt;*mysqli*扩展，我们有时称之为MySQL*增强*扩展，可以用于使用 MySQL4.1.3或更新版本中新的高级特性。*mysqli*扩展在PHP 5及以后版本中包含。&lt;/p&gt;
+
+&lt;p&gt;*mysqli*扩展有一系列的优势，相对于*mysql*扩展的提升主要有：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;面向对象接口&lt;/li&gt;
+&lt;li&gt;prepared语句支持（译注：关于prepare请参阅mysql相关文档）&lt;/li&gt;
+&lt;li&gt;多语句执行支持&lt;/li&gt;
+&lt;li&gt;事务支持&lt;/li&gt;
+&lt;li&gt;增强的调试能力&lt;/li&gt;
+&lt;li&gt;嵌入式服务支持&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;什么是php的mysqlnd扩展&#34;&gt;&lt;em&gt;什么是PHP的mysqlnd扩展&lt;/em&gt;&lt;/h2&gt;
+
+&lt;p&gt;*为了与MySQL数据库服务端进行交互，*mysql*扩展，*mysqli*扩展， PDO MySQL驱动都使用了实现了必要的协议的底层库。以前，可用的库只有MySQL客户端库和*libmysql&lt;em&gt;。&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;然而，*libmysql*包含的接口没有针对与PHP的应用交互进行优化，*libmysql* 是早期为C应用程序设计的。基于这个原因，MySQL Native驱动*mysqlnd*，作为*libmysql*的一个 针对PHP应用的修改版本被开发。&lt;/p&gt;
+
+&lt;p&gt;*mysql*，*mysqli*以及PDO Mysql驱动都可以各自配置使用 *libmysql*或者*mysqlnd*。*mysqlnd*作为一个专门设计 用于PHP系统的库，它在内存和速度上都比*libmysql*有很大提升。非常希望你去尝试这些提升。&lt;/p&gt;
+
+&lt;h1 id=&#34;二-如何设置php连接mysql的超时时间&#34;&gt;二、如何设置php连接mysql的超时时间&lt;/h1&gt;
+
+&lt;p&gt;php连接mysql的超时可以分为三种：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;连接超时&lt;/li&gt;
+&lt;li&gt;读超时&lt;/li&gt;
+&lt;li&gt;写超时&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;因为php连接mysql当前有两种连接方式，libmysql和mysqlnd（推荐）。&lt;/p&gt;
+
+&lt;h2 id=&#34;首先libmysql&#34;&gt;&lt;em&gt;首先libmysql&lt;/em&gt;&lt;/h2&gt;
+
+&lt;p&gt;在libmysql这个底层库中，提供了MYSQL_OPT_CONNECT_TIMEOUT、MYSQL_OPT_READ_TIMEOUT、MYSQL_OPT_WRITE_TIME设置项的，并且提供了相关的API。&lt;/p&gt;
+
+&lt;p&gt;源码位置&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;mysql-VERSION/sql-common/client.c 3020行&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;MYSQL_OPT_CONNECT_TIMEOUT可以直接设置。但MYSQL_OPT_READ_TIMEOUT、MYSQL_OPT_WRITE_TIME因为mysqli没有导入这两个常量。所以需要查看MySQL的源码，得到MYSQL_OPT_READ_TIMEOUT、MYSQL_OPT_WRITE_TIME的实际值，然后直接调用mysql_option。但是mysql_pdo是写死的，所以没有任何办法设置MYSQL_OPT_READ_TIMEOUT、MYSQL_OPT_WRITE_TIME。&lt;/p&gt;
+
+&lt;p&gt;源码位置：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;mysql-VERSION/include/mysql.h 160行&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;但是MYSQL_OPT_READ_TIMEOUT在mysql5.6版本以及之前（我们线上用的5.6），这个参数有以下三个限制。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;只能在TCP／IP协议下工作&lt;/li&gt;
+&lt;li&gt;MySQL server版本必须大于5.1.2&lt;/li&gt;
+&lt;li&gt;只能在windows下生效。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&#34;其次是mysqlnd&#34;&gt;&lt;em&gt;其次是mysqlnd&lt;/em&gt;&lt;/h2&gt;
+
+&lt;p&gt;对于libmysql和mysqlnd来讲，他们都是mysql、mysqli、mysqlpdo的底层库，这三个扩展才是对外暴露api的，所以说，他们对于这三种超时的支持，从代码层面是一样的。&lt;/p&gt;
+
+&lt;p&gt;但是对于&lt;strong&gt;MYSQL_OPT_READ_TIMEOUT&lt;/strong&gt;，mysqlnd在php.ini层面多处配置&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;mysqlnd.net_read_timeout&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个配置会在执行耗时较长的sql时生效，并且报错“2006-MySQL Server has gone away”。&lt;/p&gt;
+
+&lt;p&gt;这个参数和libmysql的MYSQL_OPT_READ_TIMEOUT是极为相似的。但是MYSQL_OPT_READ_TIMEOUT这个参数是有使用场景的，上一小结已经阐述。&lt;/p&gt;
+
+&lt;p&gt;MYSQL_OPT_CONNECT_TIMEOUT和MYSQL_OPT_WRITE_TIME和libmysql是相同的。&lt;/p&gt;
+
+&lt;h1 id=&#34;总而言之&#34;&gt;&lt;em&gt;总而言之&lt;/em&gt;&lt;/h1&gt;
+
+&lt;p&gt;推荐方案&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;使用mysqlnd&lt;/li&gt;
+&lt;li&gt;配置 mysqlnd.net_read_time&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;引用&#34;&gt;引用&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://fendou.org/post/2011/05/06/mysql-communication-protocols/&#34;&gt;mysql支持的四种协议&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;blog.csdn.net/heiyeshuwu/article/details/5869813&#34;&gt;MYSQL_OPT_READ_TIMEOUT设置&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://php.net/manual/zh/mysqlnd.config.php#ini.mysqlnd.net-read-timeout&#34;&gt;mysqlnd.net-read-time官方解释&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/5.6/en/mysql-options.html&#34;&gt;MYSQL_OPT_CONNECT/READ/WRITE_TIMEOUT官方解释&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+      
+    </item>
+    
+    <item>
+      <title>更新Mac的PHP默认版本</title>
+      <link>http://petrie.github.io/post/2017-04-10-mac-php-version/</link>
+      <pubDate>Mon, 10 Apr 2017 01:07:38 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-04-10-mac-php-version/</guid>
+      
+        <description>
+
+&lt;h4 id=&#34;知识点&#34;&gt;知识点&lt;/h4&gt;
+
+&lt;p&gt;类*nx系统，系统默认软件的安装位置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;/usr/bin
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;非系统默认，brew安装的软件安装位置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;/usr/local/bin
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;brew安装指定版本php后-执行一下命令-设置新版本为默认php版本&#34;&gt;brew安装指定版本php后，执行一下命令，设置新版本为默认php版本&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;export PATH=&amp;quot;$(brew --prefix php56)/bin:$PATH&amp;quot;
+export PATH=&amp;quot;$(brew --prefix php56)/sbin:$PATH&amp;quot;
+export PATH=&amp;quot;/usr/local/bin:/usr/local/sbin:$PATH&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>如何将Linux命令的结果作为下一个命令的参数</title>
+      <link>http://petrie.github.io/post/2016-09-26-%E5%A6%82%E4%BD%95%E5%B0%86linux%E5%91%BD%E4%BB%A4%E7%9A%84%E7%BB%93%E6%9E%9C%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E5%8F%82%E6%95%B0/</link>
+      <pubDate>Mon, 26 Sep 2016 13:27:45 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-09-26-%E5%A6%82%E4%BD%95%E5%B0%86linux%E5%91%BD%E4%BB%A4%E7%9A%84%E7%BB%93%E6%9E%9C%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E5%8F%82%E6%95%B0/</guid>
+      
+        <description>
+
+&lt;h3 id=&#34;一-反引号&#34;&gt;一、反引号 &amp;lsquo;`&amp;rsquo;&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;echo `date`&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;二&#34;&gt;二、$()&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;echo $(date)&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;三-find-exec参数&#34;&gt;三、find exec参数&lt;/h3&gt;
+
+&lt;h3 id=&#34;四-xargs&#34;&gt;四、xargs&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;find ./ |  xarges   ls -l&lt;/code&gt;&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP 枚举类型</title>
+      <link>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</link>
+      <pubDate>Thu, 25 Aug 2016 18:00:54 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</guid>
+      
+        <description>
+
+&lt;h2 id=&#34;问题&#34;&gt;问题&lt;/h2&gt;
+
+&lt;p&gt;PHP没有原声的枚举，从Java转过来的就懵逼了。那么怎么才能在PHP中使用枚举，而且又能被IDE识别呢。Constants（define）是一种办法，但是他是全局的，有命名空间冲突的问题。虽然数组没有命名空间问题，但是数组定义常量太模糊，而且运行时是可以被覆盖的，而且很少有IDE可以自动补全。&lt;/p&gt;
+
+&lt;h2 id=&#34;解决方案一&#34;&gt;解决方案一&lt;/h2&gt;
+
+&lt;h3 id=&#34;1-简单的用法&#34;&gt;1.简单的用法&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;abstract class DaysOfWeek
+{
+    const Sunday = 0;
+    const Monday = 1;
+    // etc.
+}
+
+$today = DaysOfWeek::Sunday;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;以上的方式很多情况下需要验证常量的值，以下的方法可以应用大部分场景&lt;/p&gt;
+
+&lt;h3 id=&#34;2-完善的用法&#34;&gt;2.完善的用法&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;abstract class BasicEnum {
+    private static $constCacheArray = NULL;
+
+    private static function getConstants() {
+        if (self::$constCacheArray == NULL) {
+            self::$constCacheArray = [];
+        }
+        $calledClass = get_called_class();
+        if (!array_key_exists($calledClass, self::$constCacheArray)) {
+            $reflect = new ReflectionClass($calledClass);
+            self::$constCacheArray[$calledClass] = $reflect-&amp;gt;getConstants();
+        }
+        return self::$constCacheArray[$calledClass];
+    }
+
+    public static function isValidName($name, $strict = false) {
+        $constants = self::getConstants();
+
+        if ($strict) {
+            return array_key_exists($name, $constants);
+        }
+
+        $keys = array_map(&#39;strtolower&#39;, array_keys($constants));
+        return in_array(strtolower($name), $keys);
+    }
+
+    public static function isValidValue($value, $strict = true) {
+        $values = array_values(self::getConstants());
+        return in_array($value, $values, $strict);
+    }
+}
+//应用场景
+abstract class DaysOfWeek extends BasicEnum {
+    const Sunday = 0;
+    const Monday = 1;
+    const Tuesday = 2;
+    const Wednesday = 3;
+    const Thursday = 4;
+    const Friday = 5;
+    const Saturday = 6;
+}
+
+DaysOfWeek::isValidName(&#39;Humpday&#39;);                  // false
+DaysOfWeek::isValidName(&#39;Monday&#39;);                   // true
+DaysOfWeek::isValidName(&#39;monday&#39;);                   // true
+DaysOfWeek::isValidName(&#39;monday&#39;, $strict = true);   // false
+DaysOfWeek::isValidName(0);                          // false
+
+DaysOfWeek::isValidValue(0);                         // true
+DaysOfWeek::isValidValue(5);                         // true
+DaysOfWeek::isValidValue(7);                         // false
+DaysOfWeek::isValidValue(&#39;Friday&#39;);                  // false
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;解决方案二&#34;&gt;解决方案二&lt;/h2&gt;
+
+&lt;h3 id=&#34;使用php-perl扩展中的splenum&#34;&gt;使用PHP Perl扩展中的SplEnum&lt;/h3&gt;
+
+&lt;p&gt;示例&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+class Month extends SplEnum {
+    const __default = self::January;
+    
+    const January = 1;
+    const February = 2;
+    const March = 3;
+    const April = 4;
+    const May = 5;
+    const June = 6;
+    const July = 7;
+    const August = 8;
+    const September = 9;
+    const October = 10;
+    const November = 11;
+    const December = 12;
+}
+
+echo new Month(Month::June) . PHP_EOL;
+
+try {
+    new Month(13);
+} catch (UnexpectedValueException $uve) {
+    echo $uve-&amp;gt;getMessage() . PHP_EOL;
+}
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>个人成长</title>
+      <link>http://petrie.github.io/post/2016-08-24-personal-growth/</link>
+      <pubDate>Wed, 24 Aug 2016 11:33:02 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-24-personal-growth/</guid>
+      
+        <description>&lt;p&gt;&lt;a href=&#34;http://mp.weixin.qq.com/s?__biz=MzAwMDgyMTA3Mg==&amp;amp;mid=2650056791&amp;amp;idx=1&amp;amp;sn=f8e3eaa2b2909e3d9c33e6837f2981c2&amp;amp;scene=0#rd&#34;&gt;“成功的人可能只做对了一件事”阅读笔记&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;熟悉事物发展的趋势&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;所以所谓的坚持不懈，可能仅仅是对于自己身处位置的准确理解而已。如果你知道再忍耐一段时间，等待你的不是深渊，而是重新回暖的上升曲线，可能心态上就会平静许多。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;学会“三分钟冷静”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这个时候最重要的其实只是给自己降降温，学会 “三分钟冷静”。在我看来，这其实&lt;strong&gt;是比失望的时候给自己鼓励都要难得多的事情&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;目标要具体&lt;/li&gt;
+&lt;li&gt;用于推翻自己&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;2016 年还剩下四个多月的时间，调整一下心态，修改一下计划，说不定你能在年末的时候给自己一个惊喜。&lt;strong&gt;大部分人坚持不下去的原因，&lt;/strong&gt;其实就是在开头的时候消耗了太多的力气。&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>文章是如何写出来的</title>
+      <link>http://petrie.github.io/post/2016-08-23-%E6%96%87%E7%AB%A0%E6%98%AF%E5%A6%82%E4%BD%95%E5%86%99%E5%87%BA%E6%9D%A5%E7%9A%84/</link>
+      <pubDate>Tue, 23 Aug 2016 15:37:30 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-23-%E6%96%87%E7%AB%A0%E6%98%AF%E5%A6%82%E4%BD%95%E5%86%99%E5%87%BA%E6%9D%A5%E7%9A%84/</guid>
+      
+        <description>
+
+&lt;p&gt;&lt;a href=&#34;http://mp.weixin.qq.com/s?__biz=MzAxNzI4MTMwMw==&amp;amp;mid=401905914&amp;amp;idx=2&amp;amp;sn=5158ce84b72a505eadc4b4c8c452d8ef&amp;amp;scene=21#wechat_redirect&#34;&gt;“霍炬：文章是如何写出来的”阅读笔记&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;选取一个和别人不懂得角度&#34;&gt;选取一个和别人不懂得角度&lt;/h2&gt;
+
+&lt;p&gt;我更关注的不是“人们流行什么”，而是“我能做什么”。首先要给自己找几个标签，我给自己找的大概有”技术“、”互联网“、”从北美看中国“，很少的几个，也很简单。因为我有一个理论，人不可能擅长所有事情，应该找几个自己熟悉的领域，做好它。有了这几个标签之后，剩下的就是把各种事件和他们组合。最近比较火的两篇，快播是“技术”+“法律”、百度这篇是“互联网”+“新闻热点”，这些标签也是具体逻辑到文章的切入点，同时他们也提供了前面所说的“独特性”。一个事件，如果不能找到我自己确定的几个标签相关的部分，我就不参与，再热门也不参与，这是所谓的“只做专业的事”。我通过这些标签保证了文章的专业性，这是基础，如果我放弃了专业和准确，文字本身再好也没什么价值。&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>个人成长</title>
+      <link>http://petrie.github.io/post/2016-08-23-personal-growth/</link>
+      <pubDate>Tue, 23 Aug 2016 14:05:11 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-23-personal-growth/</guid>
+      
+        <description>
+
+&lt;p&gt;&lt;a href=&#34;http://mp.weixin.qq.com/s?__biz=MzAxNzI4MTMwMw==&amp;amp;mid=2651630150&amp;amp;idx=1&amp;amp;sn=e01e9dccdadbfc682a8f1dc8bc477df7&amp;amp;scene=0#rd&#34;&gt;学习学习再学习《顾强：影响我个人成长的5个方法》阅读笔记&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;写作-最好的自我成长方式&#34;&gt;写作-最好的自我成长方式&lt;/h3&gt;
+
+&lt;h4 id=&#34;如何组织文字&#34;&gt;如何组织文字&lt;/h4&gt;
+
+&lt;p&gt;阑夕老师微信公众号“几点看法”系列文章，每篇都是按照 1-10 的序列来组织。对于像我这样的新手来说，这个建议最大的好处是让我不纠结如何来组织文字，而专注于思考，把想表达的内容想清楚后按照一定的先后顺序表达出来即可。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;对于文章的节奏感，也就是最好能给做到让读者一口气读完&lt;/strong&gt;，这个其实是需要很高的驾驭文字的能力。我现在能给做到的就是写完后反复的阅读，调整语句的表达方式，比如把长句修改为短句，去掉多余的不必要的“的、地、了”等助词，去掉影响文章阅读流畅度的冗余的不想干的文字等等。&lt;/p&gt;
+
+&lt;h4 id=&#34;写作后的几点感悟&#34;&gt;写作后的几点感悟&lt;/h4&gt;
+
+&lt;p&gt;1.要有感而发，对读者有启发&lt;/p&gt;
+
+&lt;p&gt;2.写作是最高效的沟通方式&lt;/p&gt;
+
+&lt;p&gt;3.阅读是写作灵感的源泉&lt;/p&gt;
+
+&lt;h3 id=&#34;分解-让我们尽快开始&#34;&gt;分解-让我们尽快开始&lt;/h3&gt;
+
+&lt;h4 id=&#34;焦虑情绪&#34;&gt;焦虑情绪&lt;/h4&gt;
+
+&lt;p&gt;在生活中，我经常会出现焦虑情绪，哪怕对于自己认为很重要的事情，也会拖到最后一刻才完成。我分析了一下，焦虑，拖延的最重要的原因是自己没头绪、对任务完成没有信心。&lt;/p&gt;
+
+&lt;p&gt;比如，写一篇长点文章，准备演讲材料、啃一本英文书这类相对复杂的任务。往往一拖再拖。对于写文章，我们可以先思考文章主要想表达的内容，罗列文章大纲，然后再根据大纲收集相关的素材。&lt;/p&gt;
+
+&lt;p&gt;对这类个人任务的动作分解最大的作用就是让我们理清头绪，客服畏惧心理，尽快开始起来。我的经验是，这些任务要开始起来，在做的过程中，一些想象中的困难可能并不存在，我们只是缺一个开始。&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>PHP面试知识点</title>
+      <link>http://petrie.github.io/post/2016-07-24-php%E9%9D%A2%E8%AF%95%E7%9F%A5%E8%AF%86%E7%82%B9/</link>
+      <pubDate>Sun, 24 Jul 2016 14:25:20 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-24-php%E9%9D%A2%E8%AF%95%E7%9F%A5%E8%AF%86%E7%82%B9/</guid>
+      
+        <description>&lt;ol&gt;
+&lt;li&gt;&lt;a href=&#34;http://blog.jobbole.com/103568/&#34;&gt;伯乐在线面试题&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.cnblogs.com/yjf512/archive/2012/02/03/2336423.html&#34;&gt;cnblogs面试题&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;​&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>《恋爱的犀牛》</title>
+      <link>http://petrie.github.io/post/2016-07-23-%E6%81%8B%E7%88%B1%E7%9A%84%E7%8A%80%E7%89%9B/</link>
+      <pubDate>Sat, 23 Jul 2016 22:56:54 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-%E6%81%8B%E7%88%B1%E7%9A%84%E7%8A%80%E7%89%9B/</guid>
+      
+        <description>
+
+&lt;h3 id=&#34;起&#34;&gt;起&lt;/h3&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;黄昏是我一天中视力最差的时候，一眼望去满街都是美女，高楼和街道也变幻了通常的形状，象在电影里……你就站在楼梯的拐脚，带着某种清香的味道，有点湿乎乎的，奇怪的气息。擦身而过的时候，才知道你在哭。事情就在那时候发生了。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;我的爱情丢了，丢失在喧闹的街道边，丢失在岁月的沙漏里，在无穷无尽的货架上， 来来往往的出租车里，忙忙碌碌寻求成功的工作中，以及一个又一个男人的面孔间。我已经丢失了我的爱情…… &lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;忘掉她，忘掉她就可以不必再忍受，忘掉她就可以不必再痛苦。忘掉她，忘掉你没有的东西，忘掉别人有的东西，忘掉你失去和以后不能得到的东西，忘掉仇恨，忘掉屈辱，忘掉爱情，像犀牛忘掉草原，像水鸟忘掉湖泊，像地狱里的人忘掉天堂，像截肢的人忘掉自己曾快 步如飞，像落叶忘掉风，像图拉忘掉母犀牛。忘掉是一般人能做的唯一的事。但是我决定不忘掉她。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;这就是图拉，我最好的，也是最后的伙伴。明明，我想给你一切，可我一无所有。我想为你放弃一切，可我又没有什么可以放弃。钱、地位、荣耀，我仅有的那一点点自尊没有这 些东西装点也就不值一提。如果是中世纪，我可以去做一个骑士，把你的名字写上每一座被征 服的城池。如果在沙漠中，我会流尽最后一滴鲜血去滋润你干裂的嘴唇。如果我是天文学家， 有一颗星星会叫做明明；如果我是诗人，所有的声音都只为你歌唱；如果我是法官，你的好恶 就是我最高的法则；如果我是神父，再没有比你更好的天堂；如果我是个哨兵，你的每一个字 都是我的口令；如果我是西楚霸王，我会带着你临阵脱逃任由人们耻笑；如果我是杀人如麻的 强盗，他们会祈求你来让我俯首帖耳。可我什么也不是。一个普通人，一个像我这样普通的人 ，我能为你做什么呢？&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;一切白的东西和你相比都成了黑墨水而自惭形秽，&lt;/p&gt;
+
+&lt;p&gt;一切无知的鸟兽因为不能说出你的名字而绝望万分，&lt;/p&gt;
+
+&lt;p&gt;一切路口的警察亮起绿灯让你顺利通过，&lt;/p&gt;
+
+&lt;p&gt;一切正确的指南针向我标示你存在的方位。&lt;/p&gt;
+
+&lt;p&gt;你是不留痕迹的风，&lt;/p&gt;
+
+&lt;p&gt;你是掠过我身体的风，&lt;/p&gt;
+
+&lt;p&gt;你是不露行踪的风，你是无处不在的风……&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;终&#34;&gt;终&lt;/h3&gt;
+
+&lt;p&gt;剧，拎起生活&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>MySQL datetime vs timestamp</title>
+      <link>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</link>
+      <pubDate>Sat, 23 Jul 2016 13:03:01 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</guid>
+      
+        <description>
+
+&lt;h2 id=&#34;mysql-时间类型最佳实践&#34;&gt;MySQL 时间类型最佳实践&lt;/h2&gt;
+
+&lt;p&gt;通常建立数据库表的时，最常出现的两个字段是，数据的创建时间和更新时间。这篇文章为大家整理出关于这两个字段数据类型选择（timestamp vs datetime）的推荐实践。&lt;/p&gt;
+
+&lt;p&gt;首先介绍下两种数据类型的试用场景&lt;/p&gt;
+
+&lt;h3 id=&#34;timestamp&#34;&gt;timestamp&lt;/h3&gt;
+
+&lt;p&gt;timestamp通常用来追踪数据记录的变化时间，通常它被设置成跟着字段的更新而更新 &lt;code&gt;DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP&lt;/code&gt; 。如果你只是想存储某个具体的时间值，datetime字段更合适。&lt;/p&gt;
+
+&lt;p&gt;它具有以下特点&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;它以UTC时间格式存储&lt;/li&gt;
+&lt;li&gt;可以由Mysql自动初始化和更新&lt;/li&gt;
+&lt;li&gt;可存储范围 &lt;code&gt;1970-01-01 00:00:01 UTC&lt;/code&gt; to &lt;code&gt;2038-01-19 03:14:07 UTC&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&#34;datetime&#34;&gt;datetime&lt;/h3&gt;
+
+&lt;p&gt;datetime字段可以很方便的通过&lt;code&gt;SELECT UNIX_TIMESTAMP(my_datetime)&lt;/code&gt; 转换为Linux 时间戳。&lt;/p&gt;
+
+&lt;p&gt;它具有以下特点&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;存储内容，所存即所得&lt;/li&gt;
+&lt;li&gt;可存储范围&lt;code&gt;1000-01-01 00:00:00&lt;/code&gt; to &lt;code&gt;9999-12-31 23:59:59&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;可以指定日和月字段为0值&lt;/li&gt;
+&lt;li&gt;某些情况下可以设置默认值now()。但是此种方式并不推荐&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&#34;以上&#34;&gt;以上&lt;/h4&gt;
+
+&lt;p&gt;实践一&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sql&#34;&gt;CREATE TABLE ts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    created_at DATETIME ,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;实践一的优点&lt;/p&gt;
+
+&lt;p&gt;1.数据库相关操作不需要关心changed_at字段的更新，MySQL会自动在数据变动的时候将此字段自动更新为当前时间&lt;/p&gt;
+
+&lt;p&gt;(the end)&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>Mac下“.bashrc”不生效</title>
+      <link>http://petrie.github.io/post/2016-06-29-mac%E4%B8%8B-bashrc%E4%B8%8D%E7%94%9F%E6%95%88/</link>
+      <pubDate>Wed, 29 Jun 2016 10:54:10 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-29-mac%E4%B8%8B-bashrc%E4%B8%8D%E7%94%9F%E6%95%88/</guid>
+      
+        <description>&lt;p&gt;新建&amp;rdquo;~/.bash_profile&amp;rdquo;，写入下面代码：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;if [ &amp;quot;${BASH-no}&amp;quot; != &amp;quot;no&amp;quot; ]; then  
+    [ -r ~/.bashrc ] &amp;amp;&amp;amp; . ~/.bashrc  
+fi
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;原因是执行.bashrc需要执行login shell，
+而Mac启动时不会执行login shell，打开terminal也不会执行login shell&lt;/p&gt;
+</description>
+      
+    </item>
+    
+    <item>
+      <title>Kafka server安装教程</title>
+      <link>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</link>
+      <pubDate>Wed, 29 Jun 2016 00:01:13 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</guid>
+      
+        <description>
+
+&lt;h4 id=&#34;下载解压&#34;&gt;下载解压&lt;/h4&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;下载地址：
+&lt;a href=&#34;https://www.apache.org/dyn/closer.cgi?path=/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz&#34;&gt;https://www.apache.org/dyn/closer.cgi?path=/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; tar -xzf kafka_2.11-0.10.0.0.tgz
+&amp;gt; cd kafka_2.11-0.10.0.0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&#34;启动kafka服务&#34;&gt;启动Kafka服务&lt;/h4&gt;
+
+&lt;p&gt;Kafka服务需要安装ZooKeeper。如果没有你可以使用kafka附带的临时脚本来启动ZooKeeper&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#启动ZooKeeper
+&amp;gt; bin/zookeeper-server-start.sh config/zookeeper.properties
+[2013-04-22 15:01:37,495] INFO Reading configuration from: config/zookeeper.properties (org.apache.zookeeper.server.quorum.QuorumPeerConfig)
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#启动kafka
+&amp;gt; bin/kafka-server-start.sh config/server.properties
+[2013-04-22 15:01:47,028] INFO Verifying properties (kafka.utils.VerifiableProperties)
+[2013-04-22 15:01:47,051] INFO Property socket.send.buffer.bytes is overridden to 1048576 (kafka.utils.VerifiableProperties)
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;创建测试topic&#34;&gt;创建测试Topic&lt;/h4&gt;
+
+&lt;p&gt;Let&amp;rsquo;s create a topic named &amp;ldquo;test&amp;rdquo; with a single partition and only one replica:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We can now see that topic if we run the list topic command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-topics.sh --list --zookeeper localhost:2181
+test
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;producer发送测试消息&#34;&gt;Producer发送测试消息&lt;/h4&gt;
+
+&lt;p&gt;使用Kafka提供的命令行工具发送消息&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test
+This is a message
+This is another message
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;consumer消费消息&#34;&gt;Consumer消费消息&lt;/h4&gt;
+
+&lt;p&gt;使用Kafka提供的命令行工具接收消息&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning
+This is a message
+This is another message
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;设置一个多broker的集群&#34;&gt;设置一个多broker的集群&lt;/h4&gt;
+
+&lt;p&gt;上面的使用场景都是单broker。下面体验下kafka的多broker模式。
+首先创建为每一个broker创建一个broker：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; cp config/server.properties config/server-1.properties
+&amp;gt; cp config/server.properties config/server-2.properties
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;编辑配置文件
+&amp;gt;file:config/server-1.properties:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-file&#34;&gt;    broker.id=1
+    listeners=PLAINTEXT://:9093
+    log.dir=/tmp/kafka-logs-1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;file:config/server-2.properties:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-file&#34;&gt;    broker.id=2
+    listeners=PLAINTEXT://:9094
+    log.dir=/tmp/kafka-logs-2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;配置中的broker.id是唯一的用来索引集群中的节点。端口和日志路径必须不同，否则实列间会相互覆盖日志。
+之前已经启动了两个节点了，现在启动新的两个。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-server-start.sh config/server-1.properties &amp;amp;
+...
+&amp;gt; bin/kafka-server-start.sh config/server-2.properties &amp;amp;
+...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Now create a new topic with a replication factor of three:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 3 --partitions 1 --topic my-replicated-topic
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在我们有了一个集群，如果监控每个broker呢？使用下面的命令：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;&amp;gt; bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic my-replicated-topic
+Topic:my-replicated-topic	PartitionCount:1	ReplicationFactor:3	Configs:
+Topic: my-replicated-topic	Partition: 0	Leader: 1	Replicas: 1,2,0	Isr: 1,2,0
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+      
+    </item>
+    
+  </channel>
+</rss>

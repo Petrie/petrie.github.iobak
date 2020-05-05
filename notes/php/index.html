@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Petrie&#39;s Home</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="petrie" />
+  <meta name="description" content="PHP 引用变量 字符串  heredoc newdoc  empty vs isset vs is_null https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/  常量  PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数  Switch  case类型只能是 整形、浮点类型、字符串  扩展开发  http://www.imsiren.com/archives/196
+http://www.cunmou.com/phpbook/preface.md
+https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/
+http://0x1.im/blog/php/how-to-create-a-php-extension.html
+https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm
+ 协程  《GO语言编程》
+http://www.laruence.com/2015/05/28/3038.html
+ 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.
+协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.
+协程任务调度 协程堆栈 错误处理 同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO  http://blog.csdn.net/HQ354974212/article/details/76155906
+  同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。 阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。 各种IO特点  同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create 非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误 IO复用模型：同时对多个I/O端口进行侦听。  各种IO特点和优缺点  阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。 在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。   由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。" />
+
+  <meta name="keywords" content="Petrie, golang, php, swoole" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.54-DEV" />
+
+
+<link rel="canonical" href="http://petrie.github.io/notes/php/" />
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.c8c1ff75dee09b44060a6c38f41b9036bac2512ccdb22d7f296cec12dc786375.css" integrity="sha256-yMH/dd7gm0QGCmw49BuQNrrCUSzNsi1/KWzsEtx4Y3U=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="PHP 引用变量 字符串  heredoc newdoc  empty vs isset vs is_null https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/  常量  PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数  Switch  case类型只能是 整形、浮点类型、字符串  扩展开发  http://www.imsiren.com/archives/196
+http://www.cunmou.com/phpbook/preface.md
+https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/
+http://0x1.im/blog/php/how-to-create-a-php-extension.html
+https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm
+ 协程  《GO语言编程》
+http://www.laruence.com/2015/05/28/3038.html
+ 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.
+协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.
+协程任务调度 协程堆栈 错误处理 同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO  http://blog.csdn.net/HQ354974212/article/details/76155906
+  同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。 阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。 各种IO特点  同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create 非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误 IO复用模型：同时对多个I/O端口进行侦听。  各种IO特点和优缺点  阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。 在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。   由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://petrie.github.io/notes/php/" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="PHP 引用变量 字符串  heredoc newdoc  empty vs isset vs is_null https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/  常量  PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数  Switch  case类型只能是 整形、浮点类型、字符串  扩展开发  http://www.imsiren.com/archives/196
+http://www.cunmou.com/phpbook/preface.md
+https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/
+http://0x1.im/blog/php/how-to-create-a-php-extension.html
+https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm
+ 协程  《GO语言编程》
+http://www.laruence.com/2015/05/28/3038.html
+ 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.
+协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.
+协程任务调度 协程堆栈 错误处理 同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO  http://blog.csdn.net/HQ354974212/article/details/76155906
+  同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。 阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。 各种IO特点  同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create 非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误 IO复用模型：同时对多个I/O端口进行侦听。  各种IO特点和优缺点  阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。 在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。   由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。">
+
+
+
+<meta itemprop="wordCount" content="1387">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="PHP 引用变量 字符串  heredoc newdoc  empty vs isset vs is_null https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/  常量  PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数  Switch  case类型只能是 整形、浮点类型、字符串  扩展开发  http://www.imsiren.com/archives/196
+http://www.cunmou.com/phpbook/preface.md
+https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/
+http://0x1.im/blog/php/how-to-create-a-php-extension.html
+https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm
+ 协程  《GO语言编程》
+http://www.laruence.com/2015/05/28/3038.html
+ 协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.
+协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.
+协程任务调度 协程堆栈 错误处理 同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO  http://blog.csdn.net/HQ354974212/article/details/76155906
+  同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。 阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。 各种IO特点  同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create 非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误 IO复用模型：同时对多个I/O端口进行侦听。  各种IO特点和优缺点  阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。 在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。   由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Petrie</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Petrie
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+  
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+    
+    <div class="post-meta">
+      <time datetime="0001-01-01" class="post-time">
+        0001-01-01
+      </time>
+    </div>
+  </header>
+
+  
+  
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#php">PHP</a>
+<ul>
+<li>
+<ul>
+<li><a href="#引用变量">引用变量</a></li>
+<li><a href="#字符串">字符串</a></li>
+<li><a href="#empty-vs-isset-vs-is-null">empty vs isset vs is_null</a></li>
+<li><a href="#常量">常量</a></li>
+<li><a href="#switch">Switch</a></li>
+<li><a href="#扩展开发">扩展开发</a></li>
+<li><a href="#协程">协程</a>
+<ul>
+<li><a href="#协程任务调度">协程任务调度</a></li>
+<li><a href="#协程堆栈">协程堆栈</a></li>
+<li><a href="#错误处理">错误处理</a></li>
+</ul></li>
+<li><a href="#同步阻塞-io-同步非阻塞-io-多路复用io-异步-io">同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO</a></li>
+<li><a href="#php常用扩展">php常用扩展</a></li>
+<li><a href="#php生命周期">php生命周期</a>
+<ul>
+<li><a href="#两个阶段">两个阶段</a></li>
+</ul></li>
+<li><a href="#php配置文件">php配置文件</a>
+<ul>
+<li><a href="#php-ini">php.ini</a></li>
+<li><a href="#php-fpm-conf">php-fpm.conf</a></li>
+</ul></li>
+<li><a href="#字符串处理函数">字符串处理函数</a></li>
+<li><a href="#数组处理函数">数组处理函数</a></li>
+<li><a href="#error-reporting">error_reporting()</a></li>
+<li><a href="#编码规范psr">编码规范psr</a></li>
+<li><a href="#文件读写">文件读写</a></li>
+<li><a href="#preg-match">preg_match</a></li>
+<li><a href="#pdo">pdo</a></li>
+<li><a href="#mysqli">mysqli</a></li>
+<li><a href="#curl">curl</a>
+<ul>
+<li><a href="#curl-setopt">curl_setopt()</a></li>
+<li><a href="#get-request">GET request</a></li>
+<li><a href="#post-request">POST request</a></li>
+</ul></li>
+<li><a href="#curl-multi">curl_multi</a></li>
+</ul></li>
+<li><a href="#php框架">PHP框架</a>
+<ul>
+<li><a href="#laravel-vs-yii-vs-symfony">Laravel vs Yii vs Symfony</a>
+<ul>
+<li><a href="#laravel">laravel</a></li>
+<li><a href="#symfony">Symfony</a></li>
+</ul></li>
+<li><a href="#php-composer">PHP Composer</a></li>
+<li><a href="#单元测试">单元测试</a></li>
+<li><a href="#设计模式">设计模式</a>
+<ul>
+<li><a href="#单例模式">单例模式</a></li>
+</ul></li>
+<li><a href="#内存管理">内存管理</a></li>
+</ul></li>
+<li><a href="#php7">php7</a>
+<ul>
+<li><a href="#vm">VM</a></li>
+<li><a href="#ast-抽象语法树">AST(抽象语法树)</a></li>
+<li><a href="#源码解析">源码解析</a>
+<ul>
+<li><a href="#zval">zval</a></li>
+<li><a href="#引用">引用</a></li>
+<li><a href="#复杂类型公共头">复杂类型公共头</a></li>
+<li><a href="#字符串-1">字符串</a></li>
+<li><a href="#对象">对象</a></li>
+<li><a href="#hashtable">hashtable</a></li>
+</ul></li>
+<li><a href="#php7新特性">php7新特性</a></li>
+<li><a href="#php7性能优化">php7性能优化</a></li>
+<li><a href="#php7升级注意事项">php7升级注意事项</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+
+  
+  <div class="post-content">
+      
+
+<h1 id="php">PHP</h1>
+
+<h3 id="引用变量">引用变量</h3>
+
+<h3 id="字符串">字符串</h3>
+
+<ul>
+<li>heredoc</li>
+<li>newdoc</li>
+</ul>
+
+<h3 id="empty-vs-isset-vs-is-null">empty vs isset vs is_null</h3>
+
+<pre><code class="language-text">https://www.virendrachandak.com/techtalk/php-isset-vs-empty-vs-is_null/
+</code></pre>
+
+<h3 id="常量">常量</h3>
+
+<ul>
+<li>PHP 5.3.0 起，有两种方式定义常量，使用 const 关键字或者 define() 函数</li>
+</ul>
+
+<h3 id="switch">Switch</h3>
+
+<ul>
+<li>case类型只能是 整形、浮点类型、字符串</li>
+</ul>
+
+<h3 id="扩展开发">扩展开发</h3>
+
+<blockquote>
+<p><a href="http://www.imsiren.com/archives/196">http://www.imsiren.com/archives/196</a></p>
+
+<p><a href="http://www.cunmou.com/phpbook/preface.md">http://www.cunmou.com/phpbook/preface.md</a></p>
+
+<p><a href="https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/">https://devzone.zend.com/1435/wrapping-c-classes-in-a-php-extension/</a></p>
+
+<p><a href="http://0x1.im/blog/php/how-to-create-a-php-extension.html">http://0x1.im/blog/php/how-to-create-a-php-extension.html</a></p>
+
+<p><a href="https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm">https://docstore.mik.ua/orelly/webprog/php/ch14_08.htm</a></p>
+</blockquote>
+
+<h3 id="协程">协程</h3>
+
+<blockquote>
+<p>《GO语言编程》</p>
+
+<p><a href="http://www.laruence.com/2015/05/28/3038.html">http://www.laruence.com/2015/05/28/3038.html</a></p>
+</blockquote>
+
+<p>协程的支持是在迭代生成器的基础上, 增加了可以回送数据给生成器的功能(调用者发送数据给被调用的生成器函数). 这就把生成器到调用者的单向通信转变为两者之间的双向通信.</p>
+
+<p>协作多任务在Windows的早期版本(windows95)和Mac OS中有使用, 不过它们后来都切换到使用抢先多任务了. 理由相当明确：如果你依靠程序自动交出控制的话, 那么一些恶意的程序将很容易占用整个CPU, 不与其他任务共享.</p>
+
+<h4 id="协程任务调度">协程任务调度</h4>
+
+<h4 id="协程堆栈">协程堆栈</h4>
+
+<h4 id="错误处理">错误处理</h4>
+
+<h3 id="同步阻塞-io-同步非阻塞-io-多路复用io-异步-io">同步阻塞 IO、同步非阻塞 IO、多路复用IO 、 异步 IO</h3>
+
+<blockquote>
+<p><a href="http://blog.csdn.net/HQ354974212/article/details/76155906">http://blog.csdn.net/HQ354974212/article/details/76155906</a></p>
+</blockquote>
+
+<ul>
+<li>同步（synchronous）和异步（asynchronous）的概念描述的是用户线程与内核的交互方式：同步是指用户线程发起 IO 请求后需要等待或者轮询内核 IO 操作完成后才能继续执行；而异步是指用户线程发起 IO 请求后仍继续执行，当内核 IO 操作完成后会通知用户线程，或者调用用户线程注册的回调函数。</li>
+<li>阻塞（blocking）和非阻塞（non-blocking）的概念描述的是用户线程调用内核 IO 的操作方式：阻塞是指 IO 操作需要彻底完成后才返回到用户空间；而非阻塞是指 IO 操作被调用后立即返回给用户一个状态值，无需等到 IO 操作彻底完成。</li>
+<li>各种IO特点
+
+<ul>
+<li>同步阻塞IO：调用recv函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。应对多客户机的网络应用，通过多进程、多线程解决。fork／pthread_create</li>
+<li>非阻塞IO：把一个socket接口设置为非阻塞，就是告诉内核当I/O操作无法完成时，不要进入睡眠，而是返回一个错误</li>
+<li>IO复用模型：同时对多个I/O端口进行侦听。</li>
+</ul></li>
+<li>各种IO特点和优缺点
+
+<ul>
+<li>阻塞blocking IO 的特点就是在 IO 执行的两个阶段（等待数据和拷贝数据两个阶段）都被 block 了。</li>
+<li>在非阻塞式 IO 中，用户进程其实是需要不断的主动询问 kernel 数据准备好了没有。</li>
+</ul></li>
+</ul>
+
+<p>由于 select 函数是阻塞的，因此多路 IO 复用模型也被称为异步阻塞 IO 模型。</p>
+
+<h3 id="php常用扩展">php常用扩展</h3>
+
+<ul>
+<li>xhprof  PHP性能分析工具</li>
+<li>xdebug  PHP调试工具</li>
+</ul>
+
+<h3 id="php生命周期">php生命周期</h3>
+
+<blockquote>
+<p><a href="http://www.php-internals.com/">http://www.php-internals.com/</a></p>
+</blockquote>
+
+<h4 id="两个阶段">两个阶段</h4>
+
+<ol>
+<li>处理请求之前的开始阶段
+
+<ol>
+<li>模块初始化阶段 MINIT</li>
+<li>模块激活阶段 RINIT</li>
+</ol></li>
+<li>请求之后的结束阶段
+
+<ol>
+<li>停用模块RSHUTDOWN</li>
+<li>关闭模块MSHUTDOWN</li>
+</ol></li>
+</ol>
+
+<p>CLI/CGI模式的PHP属于单进程的SAPI模式。这类的请求在处理一次请求后就关闭。也就是只会经过如下几个环节： 开始 - 请求开始 - 请求关闭 - 结束 SAPI接口实现就完成了其生命周期。</p>
+
+<h3 id="php配置文件">php配置文件</h3>
+
+<h4 id="php-ini">php.ini</h4>
+
+<ul>
+<li>short_open_tag</li>
+<li>asp_tags</li>
+<li>precision</li>
+<li>disable_functions</li>
+<li>disable_classes</li>
+<li>memory_limit</li>
+<li>realpath_cache_size</li>
+<li>realpath_cache_ttl</li>
+<li>post_max_size</li>
+<li>default_mimetype</li>
+<li>default_charset</li>
+<li>extension_dir</li>
+<li>extension</li>
+<li>zend_extension</li>
+</ul>
+
+<h4 id="php-fpm-conf">php-fpm.conf</h4>
+
+<blockquote>
+<p><a href="http://php.net/manual/zh/install.fpm.configuration.php">http://php.net/manual/zh/install.fpm.configuration.php</a></p>
+
+<p><a href="https://myjeeva.com/php-fpm-configuration-101.html">https://myjeeva.com/php-fpm-configuration-101.html</a></p>
+</blockquote>
+
+<ul>
+<li>process_control_timeout</li>
+<li>events.mechanism = epoll</li>
+<li>pm.max_requests = 10000</li>
+<li>request_slowlog_timeout = 5s</li>
+<li>slowlog = /var/log/$pool.log.slow</li>
+<li>request_terminate_timeout</li>
+</ul>
+
+<blockquote>
+<p><a href="https://laravel-china.github.io/php-the-right-way/">https://laravel-china.github.io/php-the-right-way/</a></p>
+</blockquote>
+
+<h3 id="字符串处理函数">字符串处理函数</h3>
+
+<blockquote>
+<p><a href="http://php.net/manual/zh/ref.strings.php">http://php.net/manual/zh/ref.strings.php</a></p>
+</blockquote>
+
+<h3 id="数组处理函数">数组处理函数</h3>
+
+<blockquote>
+<p><a href="http://php.net/manual/zh/function.array.php">http://php.net/manual/zh/function.array.php</a></p>
+</blockquote>
+
+<ul>
+<li>array_shift 将数组开头数组移出</li>
+<li>array_unshift 在数组开头插入一个或个多个单元</li>
+<li>array_change_key_case 将所有key大小写转换</li>
+<li>array_chunk 将数组分片</li>
+<li>array_column 取出二维数组指定列</li>
+<li>array_combine 创建一个数组，用一个数字的键作为其键名，另一个数组的值作为其值</li>
+<li>array_count_values 统计数组中所有的值</li>
+<li>array_diff_assoc 所有在array1但不在其他所有数组的元素，带索引取差集</li>
+<li>array_diff_key 所有在array2但不在其他所有数组的元素，带key取差集</li>
+<li>array_diff_uassoc 回调函数比较异同</li>
+<li>array_diff_ukey 回调函数比较异同</li>
+<li>end 将 <code>array</code> 的内部指针移动到最后一个单元并返回其值。</li>
+</ul>
+
+<h3 id="error-reporting">error_reporting()</h3>
+
+<ul>
+<li>E_NOTICE 通知信息会对代码中可能出现的bug给出警告，例如，<em>$arr[item]</em> 最好写成 <em>$arr[&lsquo;item&rsquo;]</em> ，因为 PHP 会试图将 <em>&ldquo;item&rdquo;</em> 当成一个常量。如果它不是一个常量，PHP才会把它当做数组的字符串索引。</li>
+<li>E_STRICT 在开发阶段启用 <strong>E_STRICT</strong> 会有一些好处。严格的信息将帮助你使用最新和最好的建议的方法来编写代码，例如它会警告你使用了将被废弃的函数。</li>
+<li>todo 更加详细的功能描述</li>
+</ul>
+
+<blockquote>
+<p><a href="http://php.net/manual/zh/errorfunc.configuration.php#ini.error-reporting">http://php.net/manual/zh/errorfunc.configuration.php#ini.error-reporting</a></p>
+</blockquote>
+
+<h3 id="编码规范psr">编码规范psr</h3>
+
+<ul>
+<li>PSR-1：基础代码风格</li>
+<li>PSR-2：严格代码风格</li>
+<li>PSR-3：日志记录器接口</li>
+<li>PSR-4：自动加载</li>
+</ul>
+
+<h3 id="文件读写">文件读写</h3>
+
+<h3 id="preg-match">preg_match</h3>
+
+<h3 id="pdo">pdo</h3>
+
+<blockquote>
+<p><a href="http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers">http://wiki.hashphp.org/PDO_Tutorial_for_MySQL_Developers</a></p>
+</blockquote>
+
+<ul>
+<li>创建连接</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php 
+  $db = new PDO('mysql:host=localhost;dbname=testdb;charset=utf8','username','password');
+</code></pre>
+
+<ul>
+<li>setAttribute</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  $db = new PDO('mysql:host=localhost;dbname=testdb;charset=utf8mb4', 'username', 'password');
+  $db-&gt;setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $db-&gt;setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+</code></pre>
+
+<ul>
+<li>Error Handing</li>
+</ul>
+
+<p>PDO has three handling modes.</p>
+
+<ol>
+<li>PDO::ERRMODE<em>SILENT acts like mysql</em>* where you must check each result and then look at $db-&gt;errorInfo(); to get the error details</li>
+<li>PDO::<em>ERRMODE_WARNING</em> throws php Warning</li>
+<li>PDO::ERRMODE_EXCEPTION throws PDOEXception. In my opinion this is the mode you should use.it acts very much like <code>or die(mysql_error())</code> when it is;t caught.</li>
+</ol>
+
+<pre><code class="language-php">  &lt;?php
+  function getData($db){
+    $stmt = $db-&gt;query('SELECT * FROM table');
+    return $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  try{
+    getData($db);
+  }catch(PDOException $ex){
+    //handle me
+  }
+</code></pre>
+
+<ul>
+<li>Running Simple Select Statements</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  foreach($db-&gt;query('SELECT * FROM table') as $row){
+    echo $row['field'].' '.$row['field'];
+  }
+</code></pre>
+
+<pre><code class="language-php">  &lt;?php
+  $stmt  = $db-&gt;query('SELECT * FROM table');
+  while($row = $stmt-&gt;fecth(PDO::FETCH_ASSOC)){
+    echo $row['field'].' '.$row['field2'];
+  }
+</code></pre>
+
+<p>or</p>
+
+<pre><code class="language-php">  &lt;?php
+  $stmt = $db-&gt;query('SELECT * FROM table');
+  $results = $stmt-&gt;fecthALL(PDO::FETCH_ASSOC);
+</code></pre>
+
+<ul>
+<li>Getting Row Count</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  $stmt = $db-&gt;query('SELECT * FROM table');
+  $row_count = $stmt-&gt;rowCount();
+</code></pre>
+
+<ul>
+<li>Getting the last Insert Id</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+   $result = $db-&gt;exec(&quot;INSERT INTO table(firstname, lastname) values('John','Doe')&quot;);
+  $insertId = $db-&gt;lastInsertId();
+</code></pre>
+
+<ul>
+<li>Running Simple INSERT,UPDATA, or DELETA statements</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php 
+   $affected_rows = $db-&gt;exec(&quot;UPDATE table set field = 'value'&quot;);
+</code></pre>
+
+<ul>
+<li>Running Statements With Parameters</li>
+</ul>
+
+<pre><code class="language-php">  $stmt = $db-&gt;prepare(&quot;SELECT * FROM table WHERE id=? AND name=?&quot;);
+  $stmt-&gt;execute(array($id,$name));
+  $rows = $stmt-&gt;fetchAll(PDO::FECTH_ASSOC);
+</code></pre>
+
+<ul>
+<li>bindValue</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  $stmt = $db-&gt;prepare(&quot;SELECT * FROM table where id=? and name=?&quot;);
+  $stmt-&gt;bindValue(1,$id,PDO::PARAM_INT)
+  $stmt-&gt;bindValue(2,$name,PDO::PARAM_STR)
+  $stmt-&gt;execute();
+  $rows = $stmt-&gt;fecthAll(PDO::FETCH_ASSOC)
+</code></pre>
+
+<ul>
+<li>named Placeholders</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+    $stmt = $db-&gt;prepare(&quot;SELECT * FROM table WHERE id=:id AND name=:name&quot;);
+    $stmt-&gt;bindValue(':id',$id,PDO::PARAM_INT);
+    $stmt-&gt;bindValue(':name',$name,PDO::PARAM_STR);
+    $stmt-&gt;execute();
+    $rows = $stmt-&gt;fecthAll(PDO::FETCH_ASSOC);
+</code></pre>
+
+<ul>
+<li>INSERT,DELETE UPDATE Prepared Queries</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+    #insert
+  $stmt = $db-&gt;prepare(&quot;INSERT INTO table(field1,field2,field3,field4,field5) VALUES(:field1,:field2,:field3,:field4,:field5)&quot;);
+  $stmt-&gt;execute(array(':field1' =&gt; $field1, ':field2' =&gt; $field2, ':field3' =&gt; $field3, ':field4' =&gt; $field4, ':field5' =&gt; $field5));
+  $affected_rows = $stmt-&gt;rowCount();
+  #delete
+  $stmt = $db-&gt;prepare(&quot;DELETE FROM table WHERE id=:id&quot;);
+  $stmt-&gt;bindValue(':id', $id, PDO::PARAM_STR);
+  $stmt-&gt;execute();
+  $affected_rows = $stmt-&gt;rowCount();
+  #update
+  $stmt = $db-&gt;prepare(&quot;UPDATE table SET name=? WHERE id=?&quot;);
+  $stmt-&gt;execute(array($name, $id));
+  $affected_rows = $stmt-&gt;rowCount();
+</code></pre>
+
+<h3 id="mysqli">mysqli</h3>
+
+<ul>
+<li>面向对象链接数据库</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  $mysqli = new mysqli('localhost', 'my_user', 'my_password', 'my_db');
+
+  /*
+  * This is the &quot;official&quot; OO way to do it,
+  * BUT $connect_error was broken until PHP 5.2.9 and 5.3.0.
+  */
+  if ($mysqli-&gt;connect_error) {
+     die('Connect Error (' . $mysqli-&gt;connect_errno . ') '
+             . $mysqli-&gt;connect_error);
+  }
+</code></pre>
+
+<p>/*</p>
+
+<ul>
+<li>Use this instead of $connect_error if you need to ensure</li>
+<li>compatibility with PHP versions prior to 5.2.9 and 5.3.0.</li>
+</ul>
+
+<pre><code class="language-text">              */
+             if (mysqli_connect_error()) {
+                 die('Connect Error (' . mysqli_connect_errno() . ') '
+                         . mysqli_connect_error());
+             }
+
+             echo 'Success... ' . $mysqli-&gt;host_info . &quot;\n&quot;;
+
+             $mysqli-&gt;close();
+</code></pre>
+
+<pre><code class="language-text">
+</code></pre>
+
+<ul>
+<li>面向过程链接数据库</li>
+</ul>
+
+<pre><code class="language-php">  &lt;?php
+  $link = mysqli_connect('localhost', 'my_user', 'my_password', 'my_db');
+
+  if (!$link) {
+      die('Connect Error (' . mysqli_connect_errno() . ') '
+              . mysqli_connect_error());
+  }
+
+  echo 'Success... ' . mysqli_get_host_info($link) . &quot;\n&quot;;
+
+  mysqli_close($link);
+  ?&gt;
+</code></pre>
+
+<p>​</p>
+
+<h3 id="curl">curl</h3>
+
+<h4 id="curl-setopt">curl_setopt()</h4>
+
+<p>CURLOPT_RETURNTRANSFER Return the response as a string instead of outputting to the screen</p>
+
+<p>CURLOPT_CONNECTTIMEOUT Number of second to attempting to connect</p>
+
+<p>CURLOPT_TIMEOUT Number of seconds all cUrl to execute</p>
+
+<p>CURLOPT_USERAGENT Useragent to use for request</p>
+
+<p>CURLOPT_URL URL to send request to</p>
+
+<p>CURLOPT_POST send request as post</p>
+
+<p>CURLOPT_POSTFIELDS Array of data to POST in request</p>
+
+<h4 id="get-request">GET request</h4>
+
+<pre><code class="language-php">$curl = curl_init();
+curl_setopt_array($curl, array(
+    CURLOPT_RETURNTRANSFER =&gt; 1,
+    CURLOPT_URL =&gt; 'http://google.com',
+     CURLOPT_USERAGENT =&gt; 'xxxx',
+));
+$resp = curl_exec($curl);
+curl_close($curl);
+</code></pre>
+
+<h4 id="post-request">POST request</h4>
+
+<pre><code class="language-php">$curl = curl_init();
+curl_setopt_array($curl, array(
+    CURLOPT_RETURNTRANSFER =&gt; 1,
+      CURLOPT_URL =&gt; 'http://google.com',
+    CURLOPT_USERAGENT =&gt; 'xxx',
+    CURLOPT_POST=&gt; 1,
+     CURLOPT_POSTFIELD =&gt; array(
+        item1 =&gt; 'value',
+          item2 =&gt; 'value2',
+    ),
+));
+$resp = curl_exec($curl);
+curl_close($curl);
+</code></pre>
+
+<ul>
+<li>curl_error()</li>
+<li>curl_errno()</li>
+</ul>
+
+<h3 id="curl-multi">curl_multi</h3>
+
+<h2 id="php框架">PHP框架</h2>
+
+<p>如何选择框架</p>
+
+<ul>
+<li>学习曲线</li>
+<li>可扩展性</li>
+<li>维护团队是否活跃</li>
+<li>LTS 支持</li>
+<li>社区是否活跃</li>
+</ul>
+
+<h3 id="laravel-vs-yii-vs-symfony">Laravel vs Yii vs Symfony</h3>
+
+<ul>
+<li>模版引擎
+
+<ul>
+<li>Symfony 用Twig</li>
+<li>laravel 用 blade</li>
+<li>Yii没有默认的模版引擎</li>
+</ul></li>
+<li>模块化
+
+<ul>
+<li>laravel 没有模块化的功能</li>
+<li>symfony和yii都有</li>
+</ul></li>
+<li>性能</li>
+<li>db支持</li>
+<li>可扩展性
+
+<ul>
+<li>laravel是赢家</li>
+</ul></li>
+</ul>
+
+<h4 id="laravel">laravel</h4>
+
+<p>laravel最佳实践</p>
+
+<p><a href="https://github.com/alexeymezenin/laravel-best-practices#business-logic-should-be-in-service-class">https://github.com/alexeymezenin/laravel-best-practices#business-logic-should-be-in-service-class</a></p>
+
+<p><strong>laravel特点</strong></p>
+
+<ul>
+<li>引入大量成熟的开源库</li>
+<li>拥抱php:命名空间、接口、匿名方法</li>
+<li>Eloquent 整合</li>
+<li>artisan</li>
+</ul>
+
+<h4 id="symfony">Symfony</h4>
+
+<p><a href="https://www.chrisyue.com/translation-create-your-own-framework-on-top-of-the-symfony-components-index.html">https://www.chrisyue.com/translation-create-your-own-framework-on-top-of-the-symfony-components-index.html</a></p>
+
+<h3 id="php-composer">PHP Composer</h3>
+
+<ul>
+<li>安装</li>
+</ul>
+
+<pre><code class="language-php">  curl -sS https://getcomposer.org/installer | php
+  mv composer.phar /usr/local/bin/composer        
+  composer -V
+</code></pre>
+
+<ul>
+<li>创建一个<code>composer.json</code>文件，写入相应的包名和版本号</li>
+</ul>
+
+<pre><code class="language-text">  {
+  &quot;require&quot;:     {
+  &quot;monolog/monolog&quot;: &quot;1.0.*&quot;
+              }
+  }
+</code></pre>
+
+<ul>
+<li>执行 <code>composer install</code>，就进入自动安装，安装完成后会生成一个<code>composer.lock</code>文件，里面是特定的版本号名，需要这个文件和<code>composer.json</code>一起提交到版本管理里去。</li>
+<li>自动加载</li>
+</ul>
+
+<pre><code class="language-php">  require 'vendor/autoload.php';
+</code></pre>
+
+<h3 id="单元测试">单元测试</h3>
+
+<h3 id="设计模式">设计模式</h3>
+
+<h4 id="单例模式">单例模式</h4>
+
+<p>php 单例模式禁用clone方法，通过私有化__clone函数</p>
+
+<p>php 单例模式禁用construct方法</p>
+
+<blockquote>
+<p><a href="http://design-patterns.readthedocs.io/zh_CN/latest/index.html">http://design-patterns.readthedocs.io/zh_CN/latest/index.html</a></p>
+
+<p><a href="https://laravel-china.github.io/php-the-right-way/pages/Design-Patterns.html">https://laravel-china.github.io/php-the-right-way/pages/Design-Patterns.html</a></p>
+</blockquote>
+
+<h3 id="内存管理">内存管理</h3>
+
+<blockquote>
+<p><a href="https://secure.php.net/manual/en/internals2.memory.php">https://secure.php.net/manual/en/internals2.memory.php</a></p>
+
+<p><a href="http://g.oswego.edu/dl/html/malloc.html">http://g.oswego.edu/dl/html/malloc.html</a></p>
+
+<p><a href="http://www.cnblogs.com/taek/p/4229869.html">http://www.cnblogs.com/taek/p/4229869.html</a></p>
+
+<p><a href="https://www.liuyingji.me/archives/142/">https://www.liuyingji.me/archives/142/</a></p>
+
+<p><a href="https://phpinternals.net/docs/php_printf">https://phpinternals.net/docs/php_printf</a>​</p>
+</blockquote>
+
+<h2 id="php7">php7</h2>
+
+<h3 id="vm">VM</h3>
+
+<blockquote>
+<p><a href="http://nikic.github.io/2017/04/14/PHP-7-Virtual-machine.html">http://nikic.github.io/2017/04/14/PHP-7-Virtual-machine.html</a></p>
+
+<p><a href="https://gywbd.github.io/posts/2016/2/zend-execution-engine.html">https://gywbd.github.io/posts/2016/2/zend-execution-engine.html</a></p>
+
+<p><a href="http://jpauli.github.io/2015/02/05/zend-vm-executor.html">http://jpauli.github.io/2015/02/05/zend-vm-executor.html</a></p>
+
+<p><a href="http://www.laruence.com/2008/08/11/147.html">http://www.laruence.com/2008/08/11/147.html</a></p>
+</blockquote>
+
+<h3 id="ast-抽象语法树">AST(抽象语法树)</h3>
+
+<blockquote>
+<p><a href="http://0x1.im/blog/php/changes-of-php7-because-of-ast.html">http://0x1.im/blog/php/changes-of-php7-because-of-ast.html</a></p>
+</blockquote>
+
+<p>PHP7 的内核中有一个重要的变化是加入了 AST。在 PHP5中，从 php 脚本到 opcodes 的执行的过程是：</p>
+
+<ol>
+<li>Lexing：词法扫描分析，将源文件转换成 token 流；</li>
+<li>Parsing：语法分析，在此阶段生成 op arrays。</li>
+</ol>
+
+<p>PHP7 中在语法分析阶段不再直接生成 op arrays，而是先生成 AST，所以过程多了一步：</p>
+
+<ol>
+<li>Lexing：词法扫描分析，将源文件转换成 token 流；</li>
+<li>Parsing：语法分析，从 token 流生成抽象语法树；</li>
+<li>Compilation：从抽象语法树生成 op arrays。</li>
+</ol>
+
+<h3 id="源码解析">源码解析</h3>
+
+<h4 id="zval">zval</h4>
+
+<blockquote>
+<p><a href="https://nikic.github.io/2015/05/05/Internal-value-representation-in-PHP-7-part-1.html">https://nikic.github.io/2015/05/05/Internal-value-representation-in-PHP-7-part-1.html</a></p>
+
+<p><a href="http://0x1.im/blog/php/Internal-value-representation-in-PHP-7-part-1.html">http://0x1.im/blog/php/Internal-value-representation-in-PHP-7-part-1.html</a></p>
+
+<p><a href="http://0x1.im/blog/php/Internal-value-representation-in-PHP-7-part-2.html">http://0x1.im/blog/php/Internal-value-representation-in-PHP-7-part-2.html</a></p>
+</blockquote>
+
+<ul>
+<li>zval in php5</li>
+</ul>
+
+<pre><code class="language-c">  typedef union _zvalue_value {
+      long lval;                 // For booleans, integers and resources
+      double dval;               // For floating point numbers
+      struct {                   // For strings
+          char *val;
+          int len;
+      } str;
+      HashTable *ht;             // For arrays
+      zend_object_value obj;     // For objects
+      zend_ast *ast;             // For constant expressions
+  } zvalue_value;
+
+  typedef struct _zval_struct {
+      zvalue_value value;
+      zend_uint refcount__gc;
+      zend_uchar type;
+      zend_uchar is_ref__gc;
+  } zval;
+  /*In order to support this additional cycle collector, the actually used zval structure is the following:*/
+  typedef struct _zval_gc_info {
+      zval z;
+      union {
+          gc_root_buffer       *buffered;
+          struct _zval_gc_info *next;
+      } u;
+  } zval_gc_info;
+</code></pre>
+
+<ul>
+<li><p>PHP5 中 zval 实现方式存在的主要问题：</p>
+
+<ul>
+<li>zval 总是需要从堆中分配内存；</li>
+<li>zval 总是存储引用计数和循环回收的信息，即使是整型这种可能并不需要此类信息的数据；</li>
+<li>在使用对象或者资源时，直接引用会导致两次计数（原因会在下一部分讲）；</li>
+<li>某些间接访问需要一个更好的处理方式。比如现在访问存储在变量中的对象间接使用了四个指针（指针链的长度为四）。这个问题也放到下一部分讨论；</li>
+<li>直接计数也就意味着数值只能在 zval 之间共享。如果想在 zval 和 hashtable key 之间共享一个字符串就不行（除非 hashtable key 也是 zval）。</li>
+</ul></li>
+</ul>
+
+<p><strong>修改动机</strong></p>
+
+<p>这里说的都是指在 64 位的系统上。首先，由于 <code>str</code> 和 <code>obj</code> 占用的大小一样， <code>zvalue_value</code> 这个联合体占用 16 个字节（bytes）的内存。整个 <code>zval</code> 结构体占用的内存是 24 个字节（考虑到内存对齐），<code>zval_gc_info</code> 的大小是 32 个字节。综上，在堆（相对于栈）分配给 zval 的内存需要额外的 16 个字节，所以每个 zval 在不同的地方一共需要用到 48 个字节（要理解上面的计算方式需要注意每个指针在 64 位的系统上也需要占用 8 个字节）。</p>
+
+<ul>
+<li>zval in php7</li>
+</ul>
+
+<pre><code class="language-c">  typedef union _zend_value {
+      zend_long         lval;
+      double            dval;
+      zend_refcounted  *counted;
+      zend_string      *str;
+      zend_array       *arr;
+      zend_object      *obj;
+      zend_resource    *res;
+      zend_reference   *ref;
+      zend_ast_ref     *ast;
+
+      // Ignore these for now, they are special
+      zval             *zv;
+      void             *ptr;
+      zend_class_entry *ce;
+      zend_function    *func;
+      struct {
+          ZEND_ENDIAN_LOHI(
+              uint32_t w1,
+              uint32_t w2)
+      } ww;
+  } zend_value;
+  struct _zval_struct {
+      zend_value value;
+      union {
+          struct {
+              ZEND_ENDIAN_LOHI_4(
+                  zend_uchar type,
+                  zend_uchar type_flags,
+                  zend_uchar const_flags,
+                  zend_uchar reserved)
+          } v;
+          uint32_t type_info;
+      } u1;
+      union {
+          uint32_t var_flags;
+          uint32_t next;                 // hash collision chain
+          uint32_t cache_slot;           // literal cache slot
+          uint32_t lineno;               // line number (for ast nodes)
+          uint32_t num_args;             // arguments number for EX(This)
+          uint32_t fe_pos;               // foreach position
+          uint32_t fe_iter_idx;          // foreach iterator index
+      } u2;
+  };
+</code></pre>
+
+<ul>
+<li>zval不再总是堆分配，不再存储引用计数</li>
+<li>标量类型不在堆分配，不再引用计数</li>
+<li>移除双重引用计数</li>
+<li>引用计数存在值本身，值可以共享。如：字符串可以被zval和hashtable共享</li>
+</ul>
+
+<h4 id="引用">引用</h4>
+
+<p>这个设计的一个很大的问题在于它无法在一个 PHP 引用变量和 PHP 非引用变量之间共享同一个值。比如下面这种情况：</p>
+
+<pre><code class="language-php">&lt;?php
+$a = [];  // $a         -&gt; zval_1(type=IS_ARRAY, refcount=1, is_ref=0) -&gt; HashTable_1(value=[])
+$b = $a;  // $a, $b     -&gt; zval_1(type=IS_ARRAY, refcount=2, is_ref=0) -&gt; HashTable_1(value=[])
+$c = $b   // $a, $b, $c -&gt; zval_1(type=IS_ARRAY, refcount=3, is_ref=0) -&gt; HashTable_1(value=[])
+
+$d =&amp; $c; // $a, $b -&gt; zval_1(type=IS_ARRAY, refcount=2, is_ref=0) -&gt; HashTable_1(value=[])
+          // $c, $d -&gt; zval_1(type=IS_ARRAY, refcount=2, is_ref=1) -&gt; HashTable_2(value=[])
+          // $d 是 $c 的引用, 但却不是 $a 的 $b, 所以这里 zval 还是需要进行复制
+          // 这样我们就有了两个 zval, 一个 is_ref 的值是 0, 一个 is_ref 的值是 1.
+
+$d[] = 1; // $a, $b -&gt; zval_1(type=IS_ARRAY, refcount=2, is_ref=0) -&gt; HashTable_1(value=[])
+          // $c, $d -&gt; zval_1(type=IS_ARRAY, refcount=2, is_ref=1) -&gt; HashTable_2(value=[1])
+          // 因为有两个分离了的 zval, $d[] = 1 的语句就不会修改 $a 和 $b 的值.
+</code></pre>
+
+<p>这种行为方式也导致在 PHP 中使用引用比普通的值要慢。比如下面这个例子：</p>
+
+<pre><code class="language-php">&lt;?php
+$array = range(0, 1000000);
+$ref =&amp; $array;
+var_dump(count($array)); // &lt;-- 这里会进行分离
+</code></pre>
+
+<p>因为 <code>count()</code> 只接受传值调用，但是 <code>$array</code> 是一个 PHP 引用，所以 <code>count()</code> 在执行之前实际上会有一个对数组进行完整的复制的过程。如果 <code>$array</code> 不是引用，这种情况就不会发生了。</p>
+
+<h4 id="复杂类型公共头">复杂类型公共头</h4>
+
+<pre><code class="language-c">struct _zend_refcounted {
+    uint32_t refcount;
+    union {
+        struct {
+            ZEND_ENDIAN_LOHI_3(
+                zend_uchar    type,
+                zend_uchar    flags,
+                uint16_t      gc_info)
+        } v;
+        uint32_t type_info;
+    } u;
+};
+</code></pre>
+
+<h4 id="字符串-1">字符串</h4>
+
+<pre><code class="language-c">struct _zend_string {
+    zend_refcounted   gc;
+    zend_ulong        h;        /* hash value */
+    size_t            len;
+    char              val[1];
+};
+</code></pre>
+
+<h4 id="对象">对象</h4>
+
+<h4 id="hashtable">hashtable</h4>
+
+<blockquote>
+<p><a href="http://nikic.github.io/2014/12/22/PHPs-new-hashtable-implementation.html">http://nikic.github.io/2014/12/22/PHPs-new-hashtable-implementation.html</a></p>
+</blockquote>
+
+<ul>
+<li>php5中hash table  效率低的原因
+
+<ul>
+<li>hash表元素需要单独堆分配，额外需要8/16字节的内存，需要更多额外内存且降低缓存命中</li>
+<li>zval需要单独分配内存，</li>
+<li>双向链表需要额外的四个指针，因此索引链表十分缓存不友好</li>
+</ul></li>
+<li>php7中的优势
+
+<ul>
+<li>简单类型的zval不再需要单独的内存分配，节约内存并且缓存友好</li>
+<li>zval存储简单类型不需要存储refcount和gc root buffer</li>
+<li>复杂类型嵌入refcount，他们可以被zval共享。比如字符串可以共享，这对hashtable</li>
+</ul></li>
+<li>php5和php7内存管理区别
+
+<ul>
+<li>zval不再一致单独分配，节约16字节</li>
+<li>hash元素不再单独分配，节约16个字节</li>
+<li>标量类型只占用16个字节</li>
+<li>hash元素默认就是有序的，不再需要双向链表</li>
+<li>冲突处理简单的连接，通过zval内嵌的字段</li>
+<li>zval嵌入hash元素，不再需要指针</li>
+<li>压缩数组</li>
+</ul></li>
+</ul>
+
+<h3 id="php7新特性">php7新特性</h3>
+
+<ul>
+<li>标量类型声明</li>
+</ul>
+
+<p>强制模式、严格模式</p>
+
+<ul>
+<li>返回类型声明</li>
+</ul>
+
+<p>同样也分为强制模式和严格模式</p>
+
+<ul>
+<li>null合并运算符</li>
+<li>太空船操作（组合比较符）</li>
+<li>通过define 定义常量数组</li>
+</ul>
+
+<pre><code class="language-php">  define('ANIMALS', [
+      'dog',
+      'cat',
+      'bird'
+  ]);
+
+  echo ANIMALS[1]; // outputs &quot;cat&quot;
+</code></pre>
+
+<ul>
+<li>匿名类</li>
+<li>Group use decalrations</li>
+</ul>
+
+<p>从同一 namespace 导入的类、函数和常量现在可以通过单个 use 语句 一次性导入了。</p>
+
+<ul>
+<li>迭代器新增return方法</li>
+<li>迭代器组合</li>
+<li>intdiv对除法结果取整</li>
+</ul>
+
+<h3 id="php7性能优化">php7性能优化</h3>
+
+<ul>
+<li>记得启用Zend Opcache, 因为PHP7即使不启用Opcache速度也比PHP-5.6启用了Opcache快, 所以之前测试时期就发生了有人一直没有启用Opcache的事情.</li>
+<li>使用新的编译器</li>
+<li>Hugepage</li>
+<li>Opcache file cache</li>
+<li>PGO</li>
+</ul>
+
+<h3 id="php7升级注意事项">php7升级注意事项</h3>
+
+<ul>
+<li>mysql_escape_string 随之mysql扩展被移除</li>
+<li>HTTP_RAW_POST_DATA -&gt; php://input</li>
+</ul>
+
+  </div>
+
+  
+  
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">petrie</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">0001-01-01</span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+  
+  
+</article>
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+  
+    
+
+
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+  
+    <a href="mailto:lpfvip2008@gmail.com" rel="me noopener" class="iconfont"
+      title="email" >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/Petrie" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="http://petrie.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2015 -
+    2020
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        petrie
+        
+      </span></span>
+
+  
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

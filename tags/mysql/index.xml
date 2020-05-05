@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mysql on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/mysql/</link>
+    <description>Recent content in Mysql on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Sun, 04 Jun 2017 20:55:12 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>PHP设置连接mysql超时时间</title>
+      <link>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</link>
+      <pubDate>Sun, 04 Jun 2017 20:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</guid>
+      <description>&lt;p&gt;本文将分别介绍PHP的mysql扩展, mysqli扩展, mysql_pdo扩展,mysqlnd扩展和libmysql 这些名词的含义。以及他们之间的关系。最后再介绍如何配置mysql的超时时间。&lt;/p&gt;
+
+&lt;h1 id=&#34;一-mysql-mysqli-mysql-pdo-mysqlnd扩展&#34;&gt;一、mysql,mysqli,mysql_pdo,mysqlnd扩展&lt;/h1&gt;
+
+&lt;p&gt;当考虑连接到MySQL数据库服务器的时候，有三种主要的API可供选择：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;PHP的MySQL扩展&lt;/li&gt;
+&lt;li&gt;PHP的mysqli扩展&lt;/li&gt;
+&lt;li&gt;PHP数据对象(PDO)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;三者都有各自的优缺点。下面的讨论就是为了对每种API的关键方面给出一个简短的介绍。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>MySQL datetime vs timestamp</title>
+      <link>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</link>
+      <pubDate>Sat, 23 Jul 2016 13:03:01 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</guid>
+      <description>MySQL 时间类型最佳实践 通常建立数据库表的时，最常出现的两个字段是，数据的创建时间和更新时间。这篇文章为大家整理出关于这两个字段数据类型选择（ti</description>
+    </item>
+    
+    <item>
+      <title>LNMP环境搭建（二） 编译安装MySQL</title>
+      <link>http://petrie.github.io/post/2012-10-25-lnmp-second-mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2012-10-25-lnmp-second-mysql/</guid>
+      <description>编译安装MySQL 1. 创建组和用户 &amp;gt;groupadd Mysql &amp;gt;useradd -g Mysql Mysql 2. 解压源码包并进入 &amp;gt;tar zxvf Mysql-5.5.3-m3.tar.gz &amp;gt;cd Mysql-5.5.3-m3 3. 配置cmake编译参数 &amp;gt;cmake -DCMAKE_INSTALL_PREFIX=/usr/local/Mysql \ &amp;gt;-DSYSCONFDIR=/usr/local/Mysql/etc \ &amp;gt;-DMYSQL_DATADIR=/usr/local/Mysql/data \ &amp;gt;-DMYSQL_TCP_PORT=3306 \ &amp;gt;-DMYSQL_UNIX_ADDR=/tmp/Mysqld.sock \ &amp;gt;-DMYSQL_USER=Mysql \ &amp;gt;-DEXTRA_CHARSETS=all \ &amp;gt;-DWITH_READLINE=1 \ &amp;gt;-DWITH_SSL=system \ &amp;gt;-DWITH_EMBEDDED_SERVER=1 \ &amp;gt;-DENABLED_LOCAL_INFILE=1</description>
+    </item>
+    
+  </channel>
+</rss>

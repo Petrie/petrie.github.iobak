@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Centos on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/centos/</link>
+    <description>Recent content in Centos on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    
+	<atom:link href="http://petrie.github.io/tags/centos/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Linux挂载ISO文件</title>
+      <link>http://petrie.github.io/post/2012-09-18-linux-mount-iso/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2012-09-18-linux-mount-iso/</guid>
+      <description>Linux 下绑定ISO文件 ## 在/mnt下创建/mnt/centos_iso文件夹 &amp;gt;mkdir /mnt/centos_iso 将/home/cksamba/share/下的centos.is</description>
+    </item>
+    
+    <item>
+      <title>利用CentOS.ISO配置本地yum源</title>
+      <link>http://petrie.github.io/post/2012-09-18-linux-yum-iso/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2012-09-18-linux-yum-iso/</guid>
+      <description>#扯淡# 公司的网络要用代理，许多非常cool的东西都玩不了，真垃圾。 组长让搞一个LNMP的教程。 上次在开发机上乱搞，把LNMP搞乱了，程序不</description>
+    </item>
+    
+  </channel>
+</rss>

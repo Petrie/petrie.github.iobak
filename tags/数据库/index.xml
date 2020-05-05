@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>数据库 on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</link>
+    <description>Recent content in 数据库 on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Sat, 23 Jul 2016 13:03:01 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MySQL datetime vs timestamp</title>
+      <link>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</link>
+      <pubDate>Sat, 23 Jul 2016 13:03:01 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</guid>
+      <description>MySQL 时间类型最佳实践 通常建立数据库表的时，最常出现的两个字段是，数据的创建时间和更新时间。这篇文章为大家整理出关于这两个字段数据类型选择（ti</description>
+    </item>
+    
+  </channel>
+</rss>

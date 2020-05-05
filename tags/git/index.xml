@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Git on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/git/</link>
+    <description>Recent content in Git on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 28 Jun 2016 23:39:07 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Git回到未来—时间旅行一</title>
+      <link>http://petrie.github.io/post/2016-06-28-git%E5%9B%9E%E5%88%B0%E6%9C%AA%E6%9D%A5%E6%97%B6%E9%97%B4%E6%97%85%E8%A1%8C%E4%B8%80/</link>
+      <pubDate>Tue, 28 Jun 2016 23:39:07 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-28-git%E5%9B%9E%E5%88%B0%E6%9C%AA%E6%9D%A5%E6%97%B6%E9%97%B4%E6%97%85%E8%A1%8C%E4%B8%80/</guid>
+      <description>依赖命令 副标题：Git cherry-pick命令和Git reset —hard 命令介绍</description>
+    </item>
+    
+    <item>
+      <title>GIT反转提交</title>
+      <link>http://petrie.github.io/post/2016-06-28-git%E5%8F%8D%E8%BD%AC%E6%8F%90%E4%BA%A4/</link>
+      <pubDate>Tue, 28 Jun 2016 23:09:45 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-28-git%E5%8F%8D%E8%BD%AC%E6%8F%90%E4%BA%A4/</guid>
+      <description>场景：Git rebase可以更改提交历史，但是在多人协同的场景下，更改历史只能针对自己的版本库，无法修改别人的版本库。在这种情况下想要修正一</description>
+    </item>
+    
+    <item>
+      <title>Git多步悔棋</title>
+      <link>http://petrie.github.io/post/2016-06-23-git-reset-soft/</link>
+      <pubDate>Thu, 23 Jun 2016 10:26:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-23-git-reset-soft/</guid>
+      <description>上一篇讲到Git commit --amend单步悔棋的实现，是由Git reset --soft别名而来，这篇将讲解如何利用Git reset --soft多步悔棋 操作步骤 1.</description>
+    </item>
+    
+    <item>
+      <title>Git单步悔棋操作</title>
+      <link>http://petrie.github.io/post/2016-06-22-git-commit-amend/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-22-git-commit-amend/</guid>
+      <description>本篇要点 Git commit --amend 此命令简单来讲，就是Git的悔棋操作，我工作中最常见的场景 &amp;gt;1.写完一段代码 Git add，Git commit 2.发现一些注释不够完整，</description>
+    </item>
+    
+    <item>
+      <title>Git文章发布方法</title>
+      <link>http://petrie.github.io/post/2014-05-27-how-pub-article/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2014-05-27-how-pub-article/</guid>
+      <description>Git clone repo new post file Git add new file Git commit push</description>
+    </item>
+    
+    <item>
+      <title>深入浅出&#39;Git commit --amend&#39;</title>
+      <link>http://petrie.github.io/post/2016-06-23-git-commit-amend/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-23-git-commit-amend/</guid>
+      <description>Git能够提供悔棋的奥秘在于Git的reset命令。Git commit --amend 可以理解为Git reset 的alias。 Git commit --amend ‘this is amend commit’ 等价于 Git reset --soft</description>
+    </item>
+    
+  </channel>
+</rss>

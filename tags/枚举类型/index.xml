@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>枚举类型 on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</link>
+    <description>Recent content in 枚举类型 on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 25 Aug 2016 18:00:54 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>PHP 枚举类型</title>
+      <link>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</link>
+      <pubDate>Thu, 25 Aug 2016 18:00:54 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</guid>
+      <description>问题 PHP没有原声的枚举，从Java转过来的就懵逼了。那么怎么才能在PHP中使用枚举，而且又能被IDE识别呢。Constants（defin</description>
+    </item>
+    
+  </channel>
+</rss>

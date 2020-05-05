@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Kafka on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/kafka/</link>
+    <description>Recent content in Kafka on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Wed, 29 Jun 2016 00:01:13 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/kafka/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Kafka server安装教程</title>
+      <link>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</link>
+      <pubDate>Wed, 29 Jun 2016 00:01:13 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</guid>
+      <description>下载解压 下载地址： https://www.apache.org/dyn/closer.cgi?path=/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz &amp;gt; tar -xzf kafka_2.11-0.10.0.0.tgz &amp;gt; cd kafka_2.11-0.10.0.0 启动Kafka服务 Kafka服务需要安装ZooKeeper。如果没有你可以使用kafka附带的临时脚本来启</description>
+    </item>
+    
+  </channel>
+</rss>

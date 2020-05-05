@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Csv on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/csv/</link>
+    <description>Recent content in Csv on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 28 Jun 2016 20:16:28 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/csv/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>打开CSV，清除科学计数法</title>
+      <link>http://petrie.github.io/post/2016-06-28-%E6%89%93%E5%BC%80csv%E6%B8%85%E9%99%A4%E7%A7%91%E5%AD%A6%E8%AE%A1%E6%95%B0%E6%B3%95/</link>
+      <pubDate>Tue, 28 Jun 2016 20:16:28 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-28-%E6%89%93%E5%BC%80csv%E6%B8%85%E9%99%A4%E7%A7%91%E5%AD%A6%E8%AE%A1%E6%95%B0%E6%B3%95/</guid>
+      <description>原始数据 87967232479237238 87967232479237238 87967232479237238 87967232479237238 87967232479237238 以上数据存为csv文件后，用excel打开后自动展示科学计数法，处理后则不会，处理后数据如下： =&amp;quot;87967232479237238&amp;quot; =&amp;quot;87967232479237238&amp;quot; =&amp;quot;87967232479237238&amp;quot; =&amp;quot;87967232479237238&amp;quot; =&amp;quot;87967232479237238&amp;quot;</description>
+    </item>
+    
+  </channel>
+</rss>

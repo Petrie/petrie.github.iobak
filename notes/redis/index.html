@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Petrie&#39;s Home</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="petrie" />
+  <meta name="description" content="Redis Codis http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis
+数据结构 字符串 链表 链表节点
+typedef struct listNode{ //前置节点 struct listNode * prev； //后置节点 struct listNode * next； //节点的值 void * value; } listNode;  链表结构体
+typedef struct list{ //表头节点 //表尾节点 //链表所包含的节点数量 //节点值复制函数 //节点值释放函数 //节点值对比函数 }  字典 字典节点
+typedef struct dictEntry{ //key void *key, //value union{ void *val; uint64_tu64; int64_ts64; } v; struct dictEntry *next; } dictEntry;  字典结构体
+typedef struct dict{ //类型特定函数 dictType *type; //私有函数 void *privdata; //hash table dictht ht[2]; int trehashidx; }dict;  解决冲突 链表" />
+
+  <meta name="keywords" content="Petrie, golang, php, swoole" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.54-DEV" />
+
+
+<link rel="canonical" href="http://petrie.github.io/notes/redis/" />
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.c8c1ff75dee09b44060a6c38f41b9036bac2512ccdb22d7f296cec12dc786375.css" integrity="sha256-yMH/dd7gm0QGCmw49BuQNrrCUSzNsi1/KWzsEtx4Y3U=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="Redis Codis http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis
+数据结构 字符串 链表 链表节点
+typedef struct listNode{ //前置节点 struct listNode * prev； //后置节点 struct listNode * next； //节点的值 void * value; } listNode;  链表结构体
+typedef struct list{ //表头节点 //表尾节点 //链表所包含的节点数量 //节点值复制函数 //节点值释放函数 //节点值对比函数 }  字典 字典节点
+typedef struct dictEntry{ //key void *key, //value union{ void *val; uint64_tu64; int64_ts64; } v; struct dictEntry *next; } dictEntry;  字典结构体
+typedef struct dict{ //类型特定函数 dictType *type; //私有函数 void *privdata; //hash table dictht ht[2]; int trehashidx; }dict;  解决冲突 链表" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://petrie.github.io/notes/redis/" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="Redis Codis http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis
+数据结构 字符串 链表 链表节点
+typedef struct listNode{ //前置节点 struct listNode * prev； //后置节点 struct listNode * next； //节点的值 void * value; } listNode;  链表结构体
+typedef struct list{ //表头节点 //表尾节点 //链表所包含的节点数量 //节点值复制函数 //节点值释放函数 //节点值对比函数 }  字典 字典节点
+typedef struct dictEntry{ //key void *key, //value union{ void *val; uint64_tu64; int64_ts64; } v; struct dictEntry *next; } dictEntry;  字典结构体
+typedef struct dict{ //类型特定函数 dictType *type; //私有函数 void *privdata; //hash table dictht ht[2]; int trehashidx; }dict;  解决冲突 链表">
+
+
+
+<meta itemprop="wordCount" content="314">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="Redis Codis http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis
+数据结构 字符串 链表 链表节点
+typedef struct listNode{ //前置节点 struct listNode * prev； //后置节点 struct listNode * next； //节点的值 void * value; } listNode;  链表结构体
+typedef struct list{ //表头节点 //表尾节点 //链表所包含的节点数量 //节点值复制函数 //节点值释放函数 //节点值对比函数 }  字典 字典节点
+typedef struct dictEntry{ //key void *key, //value union{ void *val; uint64_tu64; int64_ts64; } v; struct dictEntry *next; } dictEntry;  字典结构体
+typedef struct dict{ //类型特定函数 dictType *type; //私有函数 void *privdata; //hash table dictht ht[2]; int trehashidx; }dict;  解决冲突 链表"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Petrie</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Petrie
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/">Home</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/post/">Archives</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/tags/">Tags</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/categories/">Categories</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://petrie.github.io/about/">About</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              external-link
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+  
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+    
+    <div class="post-meta">
+      <time datetime="0001-01-01" class="post-time">
+        0001-01-01
+      </time>
+    </div>
+  </header>
+
+  
+  
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">Table of Contents</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#redis">Redis</a>
+<ul>
+<li>
+<ul>
+<li><a href="#codis">Codis</a></li>
+</ul></li>
+<li><a href="#数据结构">数据结构</a>
+<ul>
+<li><a href="#字符串">字符串</a></li>
+<li><a href="#链表">链表</a></li>
+<li><a href="#字典">字典</a>
+<ul>
+<li><a href="#解决冲突">解决冲突</a></li>
+<li><a href="#字典rehash">字典rehash</a></li>
+</ul></li>
+<li><a href="#跳跃表">跳跃表</a></li>
+<li><a href="#整数集合intset">整数集合intset</a></li>
+<li><a href="#对象">对象</a>
+<ul>
+<li><a href="#字符串对象">字符串对象</a></li>
+<li><a href="#列表对象">列表对象</a></li>
+<li><a href="#哈希对象">哈希对象</a></li>
+<li><a href="#集合对象">集合对象</a></li>
+<li><a href="#有序集合对象">有序集合对象</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#类型检查和命令多态">类型检查和命令多态</a>
+<ul>
+<li><a href="#类型检查">类型检查</a></li>
+<li><a href="#内存回收">内存回收</a></li>
+<li><a href="#对象共享">对象共享</a></li>
+<li><a href="#对象的空转时长">对象的空转时长</a></li>
+</ul></li>
+<li><a href="#数据库">数据库</a>
+<ul>
+<li><a href="#服务器中的数据库">服务器中的数据库</a></li>
+<li><a href="#切换数据库">切换数据库</a></li>
+<li><a href="#数据库空间">数据库空间</a>
+<ul>
+<li><a href="#读写键空间时的维护操作">读写键空间时的维护操作</a></li>
+</ul></li>
+<li><a href="#设置键的生存时间">设置键的生存时间</a>
+<ul>
+<li><a href="#保存过期时间">保存过期时间</a></li>
+<li><a href="#过期删除策略">过期删除策略</a></li>
+</ul></li>
+<li><a href="#aof-rdb和复制功能对过期键的处理">AOF、RDB和复制功能对过期键的处理</a>
+<ul>
+<li><a href="#rdb文件">RDB文件</a></li>
+</ul></li>
+<li><a href="#aof文件">AOF文件</a>
+<ul>
+<li><a href="#aof重写">AOF重写</a></li>
+</ul></li>
+<li><a href="#复制">复制</a></li>
+<li><a href="#数据库通知">数据库通知</a></li>
+</ul></li>
+<li><a href="#rdb持久化">RDB持久化</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+
+  
+  <div class="post-content">
+      
+
+<h1 id="redis">Redis</h1>
+
+<h3 id="codis">Codis</h3>
+
+<p><a href="http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis">http://www.infoq.com/cn/presentations/design-and-implementation-of-wandoujia-distributed-redis</a></p>
+
+<h2 id="数据结构">数据结构</h2>
+
+<h3 id="字符串">字符串</h3>
+
+<h3 id="链表">链表</h3>
+
+<p>链表节点</p>
+
+<pre><code class="language-c">typedef struct listNode{
+  //前置节点
+  struct listNode * prev；
+    //后置节点
+    struct listNode * next；
+      //节点的值
+    void * value;
+} listNode;
+</code></pre>
+
+<p>链表结构体</p>
+
+<pre><code class="language-c">typedef struct  list{
+  //表头节点
+  //表尾节点
+  //链表所包含的节点数量
+  //节点值复制函数
+  //节点值释放函数
+  //节点值对比函数
+}
+</code></pre>
+
+<h3 id="字典">字典</h3>
+
+<p>字典节点</p>
+
+<pre><code class="language-c">typedef struct dictEntry{
+  //key
+  void *key,
+  //value
+  union{
+    void *val;
+    uint64_tu64;
+    int64_ts64;
+  } v;
+  struct dictEntry *next;
+} dictEntry;
+</code></pre>
+
+<p>字典结构体</p>
+
+<pre><code class="language-c">typedef struct dict{
+  //类型特定函数
+  dictType *type;
+  //私有函数
+  void *privdata;
+  //hash table
+  dictht ht[2];
+  int trehashidx;
+}dict;
+</code></pre>
+
+<h4 id="解决冲突">解决冲突</h4>
+
+<p>链表</p>
+
+<h4 id="字典rehash">字典rehash</h4>
+
+<p><strong>hash表的扩展与收缩</strong></p>
+
+<p><strong>扩展操作</strong></p>
+
+<ul>
+<li>扩展启动条件
+
+<ul>
+<li>服务器目前没有执行BGSAVE或BGREWRITEAOF命令，并且hash表的负载因子大于等于1</li>
+<li>服务器目前正在执行BGSAVE或者BGREWRITEOF命令，并且hash标的负载因子大与等于5</li>
+</ul></li>
+</ul>
+
+<p>如果执行的是扩展操作，那么ht[1]的大小为第一个大于等于 ht[0].used*2 的 2的n次方幂</p>
+
+<p><strong>收缩操作</strong></p>
+
+<ul>
+<li>收缩启动条件
+
+<ul>
+<li>哈希表的负载因子小于0.1时，自动收缩</li>
+</ul></li>
+</ul>
+
+<p>如果是收缩操作，那么ht[1]的大小为第一个大于等于ht[0].used的 2的n次方幂</p>
+
+<p><strong>渐进式rehash</strong></p>
+
+<ul>
+<li>为h[1]分配空间</li>
+<li>将rehashidx置为0，表示rehash正式开始</li>
+<li>在rehash期间，每次对字典的更新，删除，查询，插入，程序除了执行指定操作，还会将ht[0].rehashidx索引上的所有键值对rehash到ht[1],当rehash完成后，rehashidx 加1</li>
+<li>随着字典不断操作，rehash完成，rehashidx置为-1</li>
+</ul>
+
+<p>渐进式rehash的好处是将工作分摊到每一个操作，从而避免集中处理带来的庞大计算量。</p>
+
+<p>rehash期间不会对h[0]做插入，都插入到h[1]</p>
+
+<h3 id="跳跃表">跳跃表</h3>
+
+<p>有序集合的底层实现之一</p>
+
+<p>集群节点内部数据结构</p>
+
+<p>跳跃表节点</p>
+
+<pre><code class="language-c">typedef struct zskiplistNode{
+  //层
+  struct zskiplistLevel{
+    struct zskiplistNode * forward;
+    //跨度
+    unsigned int span;
+  }level[];
+  struct zskiplistNode * backward;
+  double score;
+  robj obj;
+
+}zskiplistNode;
+</code></pre>
+
+<p>跳跃表结构体</p>
+
+<pre><code class="language-c">typedef struct zskiplist{
+  struct skiplistNode *header, *tail;
+  unsigned long length;
+  int level;
+}zskiplist
+</code></pre>
+
+<h3 id="整数集合intset">整数集合intset</h3>
+
+<p>整数集合节点</p>
+
+<pre><code class="language-c">typedef struct intset{
+  uint32_t encoding;
+  uint32_t length;
+  int8_t contents;
+}
+</code></pre>
+
+<p>encoding三种类型</p>
+
+<ul>
+<li>INTSET_ENC_INT16</li>
+<li>INTSET_ENC_INT32</li>
+<li>INTSET_ENC_INT64</li>
+</ul>
+
+<h3 id="对象">对象</h3>
+
+<pre><code class="language-c">typedef struct redisObj{
+  //类型
+  unsigned type:4;
+  //编码
+  unsigned encoding:4;
+  //指向底层实现数据结构的指针
+  void *ptr;
+}
+</code></pre>
+
+<h4 id="字符串对象">字符串对象</h4>
+
+<p>字符串对象的编码可以是int、raw或者embstr</p>
+
+<p>1.如果保存整数值，并且可以用long来表示，那么字符串对象的编码设置为int。</p>
+
+<p>2.如果保存字符串值，并且字符串长度32字节，那么字符串对象的编码设置为简单动态字符串embstr。</p>
+
+<p>3.如果保存字符串值，且长度大于32字节，那么字符串对象的编码设置为简单动态字符串redisObject。</p>
+
+<p>embstr编码的特别之处，embstr是一种优化的raw编码，优化点：将redisObject和sdshdr两个结构存到一起。</p>
+
+<h4 id="列表对象">列表对象</h4>
+
+<p>列表对象的编码可以是ziplist或者linkedlist</p>
+
+<p>ziplist和linkedlist转换条件</p>
+
+<ol>
+<li>列表对象保存的所有字符串元素的长度都小于64个字节。</li>
+<li>列表对象保存的元素数量小于512。</li>
+</ol>
+
+<p>以上两个条件可以修改</p>
+
+<h4 id="哈希对象">哈希对象</h4>
+
+<p>哈希对象的编码可以是ziplist或者hashtable</p>
+
+<p>ziplist和hashtable转换条件</p>
+
+<ol>
+<li>哈希对象保存的所有键值对的键和值得字符串长度都小于64字节。</li>
+<li>哈希对象保存的键值对数量小于512个；不能满足这两个条件的哈希对象需要使用hashtable编码</li>
+</ol>
+
+<p>以上两个条件可以修改。</p>
+
+<h4 id="集合对象">集合对象</h4>
+
+<p>集合对象的编码可以是intset或者hashtable。</p>
+
+<p>转换条件</p>
+
+<ol>
+<li>集合对象保存的所有元素都是整数值。</li>
+<li>集合对象保存的元素数量不超过512个。</li>
+</ol>
+
+<p>第二个条件可以修改。</p>
+
+<h4 id="有序集合对象">有序集合对象</h4>
+
+<p>有序集合的编码可以是ziplist和skiplist</p>
+
+<p>skiplist编码的有序集合对象使用zset结构作为底层实现，一个zset结构同时包含一个字典和一个跳跃表。</p>
+
+<p>转换条件</p>
+
+<ol>
+<li>有序集合保存的元素数量小于128个；</li>
+<li>有序集合保存的所有元素成员的长度都小于64字节。</li>
+</ol>
+
+<p>以上两个条件可以修改</p>
+
+<h2 id="类型检查和命令多态">类型检查和命令多态</h2>
+
+<p>Redis中用户操作键德尔命令基本上可以分为两种</p>
+
+<ol>
+<li>对任何键执行的命令 如del、expire、rename等</li>
+<li>另一种只能针对特定类型</li>
+</ol>
+
+<h3 id="类型检查">类型检查</h3>
+
+<p>类型特定命令的类型检查是通过redisObject结构的type属性来实现的。</p>
+
+<p>多态命令的实现。</p>
+
+<h3 id="内存回收">内存回收</h3>
+
+<p>因为C语言并不具备自动内存回收功能，所以Redis在自己的对象系统中构建了一个引用计数技术实现内存回收。</p>
+
+<pre><code class="language-c">typedef struct redisObject{
+  //引用计数
+  int refcount;
+}robj;
+</code></pre>
+
+<h3 id="对象共享">对象共享</h3>
+
+<p>多个建共享同一对象两个步骤</p>
+
+<ol>
+<li>将数据库键的值指针指向一个现有的对象</li>
+<li>将被共享的值对想的引用计数加一</li>
+</ol>
+
+<p>Redis会在初始化服务器是，创建一万个字符串对象，这些对象包含了0-9999所有整形值。这些对象用来共享。</p>
+
+<p>这个数量可以通过redis.h/REDIS_SHARD_INTEGERS常量来修改。</p>
+
+<h3 id="对象的空转时长">对象的空转时长</h3>
+
+<p>除了前面介绍的type、encoding、ptr和refcount四个属性外，redisObject结构包含的最后一个属性为lru属性，改属性记录了对象最后一个被命令访问的时间。</p>
+
+<pre><code class="language-c">typedef struct redisObject{
+  unsigned lru;
+}robj;
+</code></pre>
+
+<p>查看空转时长</p>
+
+<pre><code class="language-c">OBJECT IDLETIME
+</code></pre>
+
+<p>如果服务器的maxmemery选项被打开，切配置为volatile-lru或者alleys-lru时。那么当内存占用超过maxmemery，会回收空转时长较长的key</p>
+
+<h2 id="数据库">数据库</h2>
+
+<h3 id="服务器中的数据库">服务器中的数据库</h3>
+
+<p>Redis服务器将所有数据库都保存在服务器状态redis.h/redisServer结构的db数组中，db数组的每个项都是一个redis.h/redisDb结构。</p>
+
+<pre><code class="language-c">struct redisServer{
+  redisDb *db;
+}
+</code></pre>
+
+<p>初始化时候创建数据库的数量</p>
+
+<pre><code class="language-c">struct redisServer{
+  int dbnum;
+}
+</code></pre>
+
+<h3 id="切换数据库">切换数据库</h3>
+
+<p>默认情况下，Rediso客户端的目标数据库为0号数据库，单客户端可以通过SELEC来切换数据库</p>
+
+<pre><code class="language-c">typedef struct redisClient{
+  redisDb *db;
+}redisClient;
+</code></pre>
+
+<h3 id="数据库空间">数据库空间</h3>
+
+<pre><code class="language-c">typedef struct redisDb{
+  //数据库键空间，保存着数据库中的所有键值对。
+  dict *dict;
+}redisDb;
+</code></pre>
+
+<p>数据库的键空间是一个字典。</p>
+
+<h4 id="读写键空间时的维护操作">读写键空间时的维护操作</h4>
+
+<ol>
+<li>读取一个键之后，更新对应命中次数和不命中次数 ，这两个值可以通过status查看</li>
+<li>读取一个建之后，服务器会更新键的LRU时间</li>
+<li>如果客户端使用watch监视了某个键，那么服务器会将这个键标记为脏。</li>
+<li>键被修改，发送数据库通知</li>
+</ol>
+
+<h3 id="设置键的生存时间">设置键的生存时间</h3>
+
+<p>通过EXPIRE或者PEXPIRE，客户端可以以秒或毫秒精度设置生存时间。TTL查看剩余时间。</p>
+
+<h4 id="保存过期时间">保存过期时间</h4>
+
+<p>redisDb结构的expires字典保存了数据库中所有键的过期时间，我们称这个字典为过期字典：</p>
+
+<pre><code class="language-c">typedef struct redisDb{
+  dict *expires;
+
+}redisDb;
+</code></pre>
+
+<ul>
+<li>过期字典的键是一个指针，这个指针指向键空间中的某个键对象。</li>
+<li>过期字典的值是一个long long类型的整数，保存时间戳。</li>
+</ul>
+
+<h4 id="过期删除策略">过期删除策略</h4>
+
+<p>redis使用惰性删除和定期删除两种策略。</p>
+
+<ul>
+<li>定期删除
+
+<ul>
+<li>函数每次运行时，都从一定数量的数据库中取出一定数量的随机键进行检查，并删除</li>
+<li>全局变量current_db记录进度。</li>
+<li>循环执行</li>
+</ul></li>
+</ul>
+
+<h3 id="aof-rdb和复制功能对过期键的处理">AOF、RDB和复制功能对过期键的处理</h3>
+
+<h4 id="rdb文件">RDB文件</h4>
+
+<ul>
+<li>生成RDB文件</li>
+</ul>
+
+<p>会检查过期情况，过期的不会被保存</p>
+
+<ul>
+<li>载入RDB文件</li>
+</ul>
+
+<p>主服务器载入会检查。从服务器不会检查。</p>
+
+<h3 id="aof文件">AOF文件</h3>
+
+<p>当过期键被惰性删除或者定期删除后，程序回想AOF文件追加DEL命令，来显示记录。</p>
+
+<h4 id="aof重写">AOF重写</h4>
+
+<p>过期键不会被重写。</p>
+
+<h3 id="复制">复制</h3>
+
+<p>在服务器运行在复制模式下，从服务器的过期键删除动作有主服务器控制：</p>
+
+<ol>
+<li>主服务器删除一个过期键，会显示想所有从服务发送DEL命令。</li>
+<li>从服务器读操作，碰到过期键不会删除，而会继续像处理未过期的键一样来出来过期键</li>
+<li>从服务器只有主服务器发来DEL命令之后，才会删除。</li>
+</ol>
+
+<h3 id="数据库通知">数据库通知</h3>
+
+<p>数据库通知是Redis 2.8版本新增的功能，这个功能可以通过订阅的方式来获取数据库的变化</p>
+
+<h2 id="rdb持久化">RDB持久化</h2>
+
+<p>todo</p>
+
+  </div>
+
+  
+  
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">Author</span>
+    <span class="item-content">petrie</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">LastMod</span>
+    <span class="item-content">0001-01-01</span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">License</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+  
+  
+</article>
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+  
+    
+
+
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+  
+    <a href="mailto:lpfvip2008@gmail.com" rel="me noopener" class="iconfont"
+      title="email" >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+  
+    <a href="https://github.com/Petrie" rel="me noopener" class="iconfont"
+      title="github"  target="_blank"
+      >
+      <svg class="icon" style="" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M512 12.672c-282.88 0-512 229.248-512 512 0 226.261333 146.688 418.133333 350.08 485.76 25.6 4.821333 34.986667-11.008 34.986667-24.618667 0-12.16-0.426667-44.373333-0.64-87.04-142.421333 30.890667-172.458667-68.693333-172.458667-68.693333C188.672 770.986667 155.008 755.2 155.008 755.2c-46.378667-31.744 3.584-31.104 3.584-31.104 51.413333 3.584 78.421333 52.736 78.421333 52.736 45.653333 78.293333 119.850667 55.68 149.12 42.581333 4.608-33.109333 17.792-55.68 32.426667-68.48-113.706667-12.8-233.216-56.832-233.216-253.013333 0-55.893333 19.84-101.546667 52.693333-137.386667-5.76-12.928-23.04-64.981333 4.48-135.509333 0 0 42.88-13.738667 140.8 52.48 40.96-11.392 84.48-17.024 128-17.28 43.52 0.256 87.04 5.888 128 17.28 97.28-66.218667 140.16-52.48 140.16-52.48 27.52 70.528 10.24 122.581333 5.12 135.509333 32.64 35.84 52.48 81.493333 52.48 137.386667 0 196.693333-119.68 240-233.6 252.586667 17.92 15.36 34.56 46.762667 34.56 94.72 0 68.522667-0.64 123.562667-0.64 140.202666 0 13.44 8.96 29.44 35.2 24.32C877.44 942.592 1024 750.592 1024 524.672c0-282.752-229.248-512-512-512"></path>
+</svg>
+
+    </a>
+
+
+<a href="http://petrie.github.io/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2015 -
+    2020
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        petrie
+        
+      </span></span>
+
+  
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

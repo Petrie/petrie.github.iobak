@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/post/</link>
+    <description>Recent content in Posts on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 12 Apr 2018 18:22:53 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>PHP内存管理ZMM（五）－大内存区large_free_bucket的存入</title>
+      <link>http://petrie.github.io/post/2018-04-12-php-zend-memory-manager4-large-free-bucket/</link>
+      <pubDate>Thu, 12 Apr 2018 18:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-12-php-zend-memory-manager4-large-free-bucket/</guid>
+      <description>&lt;p&gt;之前的章节中介绍过large_free_bucket的存入条件。这一篇将介绍large_free_bucket的主要结构包括其中的链表结构和树结构和存入取出流程。本章讲通过图示大内存区域内存分部情况。&lt;/p&gt;
+
+&lt;h3 id=&#34;什么时候会向large-free-bucket存入内存块&#34;&gt;什么时候会向large_free_bucket存入内存块&lt;/h3&gt;
+
+&lt;p&gt;这里在复习下存入large_free_bucket流程。在调用emalloc申请能存，且在当前heap中没有找到合适内存块，emalloc函数会调用malloc向内核申请内存。向内核申请每次只能申请 heap-&amp;gt;block_size倍数大小内存。所以内核申请到的  heap-&amp;gt;block_size倍数 大小的内存并不会全部返回到emalloc调用者，而是有剩余。&lt;/p&gt;
+
+&lt;p&gt;举个例子，假设heap-&amp;gt;block_size=256k，如果emalloc调用者申请大小为250k时，emalloc内部会向内核申请256k大小的内存。所以会有6k的内存剩余，这6k的内存将会存入到&lt;strong&gt;大内存区large_free_bucket&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;p&gt;另外一个例子，假设heap-&amp;gt;block_size=256k，如果emalloc调用者申请大小为260k（大于256k）时，emalloc会申请256*2=512k大小的内存，此时会有512k－260k＝252k的内存剩余。此时剩下的252k内存会存入到&lt;strong&gt;剩余内存区rest_bucket&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;h3 id=&#34;手动构建large-free-bucket结构&#34;&gt;手动构建large_free_bucket结构&lt;/h3&gt;
+
+&lt;h4 id=&#34;large-free-bucket结构举例&#34;&gt;large_free_bucket结构举例&lt;/h4&gt;
+
+&lt;p&gt;现在假设有以下内存块在large_free_bucket，分别为：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;大小			二进制					alloc_size
+	
+600			0000 0010 0101 1000		262144-48-600=261496
+704			0000 0010 1100 0000		262144-48-704=261392
+800			0000 0011 0010 0000		262144-48-800=261296
+904			0000 0011 1000 1000		262144-48-904=261192
+1000		0000 0011 1110 1000		262144-48-1000=261096
+600			0000 0010 0101 1000		262144-48-600=261496
+704			0000 0010 1100 0000		262144-48-704=261392
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面第一列中是准备存入heap中的内存大小，第二列为其二进制。第三列为_zend_mm_alloc_int传入的内存大小。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（四）－GDB调试php源码并手动调用ZMM相关函数</title>
+      <link>http://petrie.github.io/post/2018-04-11-php-zend-gdb-call/</link>
+      <pubDate>Wed, 11 Apr 2018 18:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-11-php-zend-gdb-call/</guid>
+      <description>&lt;p&gt;本章讲介绍gdb调试php，并手动调用ZMM中申请内存和查找大内存块的函数&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;_zend_mm_alloc_int&lt;/li&gt;
+&lt;li&gt;zend_mm_search_large_block&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;为什么要手动调用函数&#34;&gt;为什么要手动调用函数&lt;/h4&gt;
+
+&lt;p&gt;在阅读PHP ZMM源码的时候，有许多复杂的逻辑仅仅通过阅读源码很难理解，比如大内存large_free_buckets结构的构造。同构手动调用函数，可以方便的执行要申请的内存大小，从而测试构造large_free_buckets结构&lt;/p&gt;
+
+&lt;h4 id=&#34;编译安装php&#34;&gt;编译安装PHP&lt;/h4&gt;
+
+&lt;p&gt;从github上下载php源码&lt;/p&gt;
+
+&lt;p&gt;编译到目录:~/php5.6-disabledebug，注意不要开启debug选项&lt;/p&gt;
+
+&lt;h4 id=&#34;gdb调试php&#34;&gt;GDB调试PHP&lt;/h4&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（三）－内存分配函数emalloc</title>
+      <link>http://petrie.github.io/post/2018-04-09-php-zend-memory-manager-2/</link>
+      <pubDate>Wed, 11 Apr 2018 10:22:53 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-09-php-zend-memory-manager-2/</guid>
+      <description>&lt;h4 id=&#34;主流程&#34;&gt;主流程&lt;/h4&gt;
+
+&lt;p&gt;emalloc是ZMM中heap层实现的函数，其内部调用_zend_mm_alloc_int函数。在_zend_mm_alloc_int中会依次在heap层的缓存区、小内存区、大内存区、剩余内存区寻找合适的内存。如果在这四个区域中都为查找到合适的内存，则调用malloc向内核申请，在向内核申请内存时，申请的大小必须是segment_size(256k)的整数倍，最小为256k。以下用流程图展示&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM（二）－常见宏的值</title>
+      <link>http://petrie.github.io/post/2018-04-09-normal-zend-macro-value/</link>
+      <pubDate>Mon, 09 Apr 2018 14:22:25 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-09-normal-zend-macro-value/</guid>
+      <description>&lt;h4 id=&#34;相关宏的定义&#34;&gt;相关宏的定义&lt;/h4&gt;
+
+&lt;p&gt;64位系统非debug模式编译后的&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;#define ZEND_MM_ALIGNMENT 8
+#define ZEND_MM_ALIGNMENT_LOG2 3
+#define ZEND_MM_MIN_SIZE					((ZEND_MM_ALIGNED_MIN_HEADER_SIZE&amp;gt;(ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE))?(ZEND_MM_ALIGNED_MIN_HEADER_SIZE-(ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE)):0) 
+#define ZEND_MM_MAX_SMALL_SIZE				((ZEND_MM_NUM_BUCKETS&amp;lt;&amp;lt;ZEND_MM_ALIGNMENT_LOG2)+ZEND_MM_ALIGNED_MIN_HEADER_SIZE) 
+#define ZEND_MM_ALIGNED_HEADER_SIZE			ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_block)) 
+#define ZEND_MM_ALIGNED_FREE_HEADER_SIZE	ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_small_free_block)) 
+#define ZEND_MM_MIN_ALLOC_BLOCK_SIZE		ZEND_MM_ALIGNED_SIZE(ZEND_MM_ALIGNED_HEADER_SIZE + END_MAGIC_SIZE) 
+#define ZEND_MM_ALIGNED_MIN_HEADER_SIZE		(ZEND_MM_MIN_ALLOC_BLOCK_SIZE&amp;gt;ZEND_MM_ALIGNED_FREE_HEADER_SIZE?ZEND_MM_MIN_ALLOC_BLOCK_SIZE:ZEND_MM_ALIGNED_FREE_HEADER_SIZE) 
+#define ZEND_MM_ALIGNED_SEGMENT_SIZE		ZEND_MM_ALIGNED_SIZE(sizeof(zend_mm_segment))  
+#define ZEND_MM_TRUE_SIZE(size)				((size&amp;lt;ZEND_MM_MIN_SIZE)?(ZEND_MM_ALIGNED_MIN_HEADER_SIZE):(ZEND_MM_ALIGNED_SIZE(size+ZEND_MM_ALIGNED_HEADER_SIZE+END_MAGIC_SIZE)))
+#define ZEND_MM_SMALL_SIZE(true_size)		(true_size &amp;lt; ZEND_MM_MAX_SMALL_SIZE)
+#define ZEND_MM_BUCKET_INDEX(true_size)		((true_size&amp;gt;&amp;gt;ZEND_MM_ALIGNMENT_LOG2)-(ZEND_MM_ALIGNED_MIN_HEADER_SIZE&amp;gt;&amp;gt;ZEND_MM_ALIGNMENT_LOG2))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;下面依次解释各个宏的含义和作用&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNMENT&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;内存对齐的时候用到，值为8，无特别的逻辑含义&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;ZEND_MM_ALIGNMENT_LOG2&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;辅助内存对齐的时候用到，值为3，无特别的逻辑含义&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP内存管理ZMM(一)－基本概念、数据结构和相关初始化函数</title>
+      <link>http://petrie.github.io/post/2018-04-08-php-zend-memory-manager/</link>
+      <pubDate>Sun, 08 Apr 2018 06:06:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-04-08-php-zend-memory-manager/</guid>
+      <description>&lt;h4 id=&#34;基本概念&#34;&gt;基本概念&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://flykobe.com/wp-content/uploads/2015/03/php-zend-memory-manager.jpg&#34; alt=&#34;ZZM架构图&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如上图所示，中间部分的zend memory manage由接口层、heap层、存储层(storage)组成。内存管理的主要逻辑在heap层中，后续主要讲解相关的数据结构和函数流程。&lt;/p&gt;
+
+&lt;h4 id=&#34;基本数据结构&#34;&gt;基本数据结构&lt;/h4&gt;
+
+&lt;p&gt;基于PHP-5.6&lt;/p&gt;
+
+&lt;h5 id=&#34;zend-mm-block-info&#34;&gt;zend_mm_block_info&lt;/h5&gt;
+
+&lt;p&gt;_zend_mm_block_info是ZMM内存管理中最小的数据单元。各字段含义见代码注释&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;typedef struct _zend_mm_block_info {
+#if ZEND_MM_COOKIES
+   size_t _cookie;
+#endif
+   size_t _size;
+   size_t _prev;
+} zend_mm_block_info;
+&lt;/code&gt;&lt;/pre&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP扩展开发－自动生成扩展骨架</title>
+      <link>http://petrie.github.io/post/2018-03-29-first-php-extension/</link>
+      <pubDate>Thu, 29 Mar 2018 03:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-03-29-first-php-extension/</guid>
+      <description>&lt;p&gt;PHP扩展编译有两种方式&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;作为一个可装载模块或者DSO（动态共享对象）&lt;/li&gt;
+&lt;li&gt;静态编译到PHP&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;静态编译的方式直接和PHP编译到一起，步骤比较简单，但每次变更代码都要编译这个PHP代码，非常耗时，所以这里采用第二种方式&lt;/p&gt;
+
+&lt;h4 id=&#34;开发环境&#34;&gt;开发环境&lt;/h4&gt;
+
+&lt;p&gt;本文脚本命令仅在以下环境测试成功&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;操作系统：CentOS 6.9
+PHP版本：PHP-7.1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;安装开发工具包&#34;&gt;安装开发工具包&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;yum groupinstall -y &#39;Development Tools&#39;
+&lt;/code&gt;&lt;/pre&gt;</description>
+    </item>
+    
+    <item>
+      <title>如何独立的使用Laravel的IOC功能</title>
+      <link>http://petrie.github.io/post/2018-03-21-laravel-ioc/</link>
+      <pubDate>Wed, 21 Mar 2018 05:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-03-21-laravel-ioc/</guid>
+      <description>&lt;p&gt;Laravel拥有一个强大的IOC/DI容器。且可以独立于Laravel使用。本文介绍如何单独使用Laravel的container组件&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>PHP设置连接mysql超时时间</title>
+      <link>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</link>
+      <pubDate>Sun, 04 Jun 2017 20:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-06-04-php-mysql-timeout/</guid>
+      <description>&lt;p&gt;本文将分别介绍PHP的mysql扩展, mysqli扩展, mysql_pdo扩展,mysqlnd扩展和libmysql 这些名词的含义。以及他们之间的关系。最后再介绍如何配置mysql的超时时间。&lt;/p&gt;
+
+&lt;h1 id=&#34;一-mysql-mysqli-mysql-pdo-mysqlnd扩展&#34;&gt;一、mysql,mysqli,mysql_pdo,mysqlnd扩展&lt;/h1&gt;
+
+&lt;p&gt;当考虑连接到MySQL数据库服务器的时候，有三种主要的API可供选择：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;PHP的MySQL扩展&lt;/li&gt;
+&lt;li&gt;PHP的mysqli扩展&lt;/li&gt;
+&lt;li&gt;PHP数据对象(PDO)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;三者都有各自的优缺点。下面的讨论就是为了对每种API的关键方面给出一个简短的介绍。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>更新Mac的PHP默认版本</title>
+      <link>http://petrie.github.io/post/2017-04-10-mac-php-version/</link>
+      <pubDate>Mon, 10 Apr 2017 01:07:38 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-04-10-mac-php-version/</guid>
+      <description>知识点 类*nx系统，系统默认软件的安装位置 /usr/bin 非系统默认，brew安装的软件安装位置 /usr/local/bin brew安装指定版本php后，执行一下命令，设置新版本为</description>
+    </item>
+    
+    <item>
+      <title>如何将Linux命令的结果作为下一个命令的参数</title>
+      <link>http://petrie.github.io/post/2016-09-26-%E5%A6%82%E4%BD%95%E5%B0%86linux%E5%91%BD%E4%BB%A4%E7%9A%84%E7%BB%93%E6%9E%9C%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E5%8F%82%E6%95%B0/</link>
+      <pubDate>Mon, 26 Sep 2016 13:27:45 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-09-26-%E5%A6%82%E4%BD%95%E5%B0%86linux%E5%91%BD%E4%BB%A4%E7%9A%84%E7%BB%93%E6%9E%9C%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E5%8F%82%E6%95%B0/</guid>
+      <description>一、反引号 &amp;lsquo;`&amp;rsquo; echo `date` 二、$() echo $(date) 三、find exec参数 四、xargs find ./ | xarges ls -l</description>
+    </item>
+    
+    <item>
+      <title>PHP 枚举类型</title>
+      <link>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</link>
+      <pubDate>Thu, 25 Aug 2016 18:00:54 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-25-php-%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B/</guid>
+      <description>问题 PHP没有原声的枚举，从Java转过来的就懵逼了。那么怎么才能在PHP中使用枚举，而且又能被IDE识别呢。Constants（defin</description>
+    </item>
+    
+    <item>
+      <title>个人成长</title>
+      <link>http://petrie.github.io/post/2016-08-24-personal-growth/</link>
+      <pubDate>Wed, 24 Aug 2016 11:33:02 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-24-personal-growth/</guid>
+      <description>“成功的人可能只做对了一件事”阅读笔记 熟悉事物发展的趋势 所以所谓的坚持不懈，可能仅仅是对于自己身处位置的准确理解而已。如果你知道再忍耐一段时</description>
+    </item>
+    
+    <item>
+      <title>文章是如何写出来的</title>
+      <link>http://petrie.github.io/post/2016-08-23-%E6%96%87%E7%AB%A0%E6%98%AF%E5%A6%82%E4%BD%95%E5%86%99%E5%87%BA%E6%9D%A5%E7%9A%84/</link>
+      <pubDate>Tue, 23 Aug 2016 15:37:30 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-23-%E6%96%87%E7%AB%A0%E6%98%AF%E5%A6%82%E4%BD%95%E5%86%99%E5%87%BA%E6%9D%A5%E7%9A%84/</guid>
+      <description>“霍炬：文章是如何写出来的”阅读笔记 选取一个和别人不懂得角度 我更关注的不是“人们流行什么”，而是“我能做什么”。首先要给自己找几个标签，我给</description>
+    </item>
+    
+    <item>
+      <title>个人成长</title>
+      <link>http://petrie.github.io/post/2016-08-23-personal-growth/</link>
+      <pubDate>Tue, 23 Aug 2016 14:05:11 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-08-23-personal-growth/</guid>
+      <description>学习学习再学习《顾强：影响我个人成长的5个方法》阅读笔记 写作-最好的自我成长方式 如何组织文字 阑夕老师微信公众号“几点看法”系列文章，每篇都是</description>
+    </item>
+    
+    <item>
+      <title>PHP面试知识点</title>
+      <link>http://petrie.github.io/post/2016-07-24-php%E9%9D%A2%E8%AF%95%E7%9F%A5%E8%AF%86%E7%82%B9/</link>
+      <pubDate>Sun, 24 Jul 2016 14:25:20 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-24-php%E9%9D%A2%E8%AF%95%E7%9F%A5%E8%AF%86%E7%82%B9/</guid>
+      <description>伯乐在线面试题 cnblogs面试题 ​</description>
+    </item>
+    
+    <item>
+      <title>《恋爱的犀牛》</title>
+      <link>http://petrie.github.io/post/2016-07-23-%E6%81%8B%E7%88%B1%E7%9A%84%E7%8A%80%E7%89%9B/</link>
+      <pubDate>Sat, 23 Jul 2016 22:56:54 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-%E6%81%8B%E7%88%B1%E7%9A%84%E7%8A%80%E7%89%9B/</guid>
+      <description>起 黄昏是我一天中视力最差的时候，一眼望去满街都是美女，高楼和街道也变幻了通常的形状，象在电影里……你就站在楼梯的拐脚，带着某种清香的味道，有</description>
+    </item>
+    
+    <item>
+      <title>MySQL datetime vs timestamp</title>
+      <link>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</link>
+      <pubDate>Sat, 23 Jul 2016 13:03:01 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-07-23-mysql-datetime-vs-timestamp/</guid>
+      <description>MySQL 时间类型最佳实践 通常建立数据库表的时，最常出现的两个字段是，数据的创建时间和更新时间。这篇文章为大家整理出关于这两个字段数据类型选择（ti</description>
+    </item>
+    
+    <item>
+      <title>Mac下“.bashrc”不生效</title>
+      <link>http://petrie.github.io/post/2016-06-29-mac%E4%B8%8B-bashrc%E4%B8%8D%E7%94%9F%E6%95%88/</link>
+      <pubDate>Wed, 29 Jun 2016 10:54:10 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-29-mac%E4%B8%8B-bashrc%E4%B8%8D%E7%94%9F%E6%95%88/</guid>
+      <description>新建&amp;rdquo;~/.bash_profile&amp;rdquo;，写入下面代码： if [ &amp;quot;${BASH-no}&amp;quot; != &amp;quot;no&amp;quot; ]; then [ -r ~/.bashrc ] &amp;amp;&amp;amp; . ~/.bashrc fi 原因是执行.bashrc需要执行</description>
+    </item>
+    
+    <item>
+      <title>Kafka server安装教程</title>
+      <link>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</link>
+      <pubDate>Wed, 29 Jun 2016 00:01:13 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-29-kafka-server%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B/</guid>
+      <description>下载解压 下载地址： https://www.apache.org/dyn/closer.cgi?path=/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz &amp;gt; tar -xzf kafka_2.11-0.10.0.0.tgz &amp;gt; cd kafka_2.11-0.10.0.0 启动Kafka服务 Kafka服务需要安装ZooKeeper。如果没有你可以使用kafka附带的临时脚本来启</description>
+    </item>
+    
+    <item>
+      <title>Git回到未来—时间旅行一</title>
+      <link>http://petrie.github.io/post/2016-06-28-git%E5%9B%9E%E5%88%B0%E6%9C%AA%E6%9D%A5%E6%97%B6%E9%97%B4%E6%97%85%E8%A1%8C%E4%B8%80/</link>
+      <pubDate>Tue, 28 Jun 2016 23:39:07 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2016-06-28-git%E5%9B%9E%E5%88%B0%E6%9C%AA%E6%9D%A5%E6%97%B6%E9%97%B4%E6%97%85%E8%A1%8C%E4%B8%80/</guid>
+      <description>依赖命令 副标题：Git cherry-pick命令和Git reset —hard 命令介绍</description>
+    </item>
+    
+  </channel>
+</rss>

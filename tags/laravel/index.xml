@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Laravel on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/laravel/</link>
+    <description>Recent content in Laravel on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Wed, 21 Mar 2018 05:55:12 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>如何独立的使用Laravel的IOC功能</title>
+      <link>http://petrie.github.io/post/2018-03-21-laravel-ioc/</link>
+      <pubDate>Wed, 21 Mar 2018 05:55:12 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2018-03-21-laravel-ioc/</guid>
+      <description>&lt;p&gt;Laravel拥有一个强大的IOC/DI容器。且可以独立于Laravel使用。本文介绍如何单独使用Laravel的container组件&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>微趴小任务 on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/%E5%BE%AE%E8%B6%B4%E5%B0%8F%E4%BB%BB%E5%8A%A1/</link>
+    <description>Recent content in 微趴小任务 on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    
+	<atom:link href="http://petrie.github.io/tags/%E5%BE%AE%E8%B6%B4%E5%B0%8F%E4%BB%BB%E5%8A%A1/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>微趴小任务</title>
+      <link>http://petrie.github.io/post/2015-09-19-mirco-task/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2015-09-19-mirco-task/</guid>
+      <description>##微趴小任务：倒入北京QQ校友到微信群## 沟通示例： hi，我是民大计算机08的刘朋飞。民大北京校友会的志愿者~ 我们在组建民大校友微信群。后</description>
+    </item>
+    
+  </channel>
+</rss>

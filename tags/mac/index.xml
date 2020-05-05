@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mac on Petrie&#39;s Home</title>
+    <link>http://petrie.github.io/tags/mac/</link>
+    <description>Recent content in Mac on Petrie&#39;s Home</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 10 Apr 2017 01:07:38 +0000</lastBuildDate>
+    
+	<atom:link href="http://petrie.github.io/tags/mac/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>更新Mac的PHP默认版本</title>
+      <link>http://petrie.github.io/post/2017-04-10-mac-php-version/</link>
+      <pubDate>Mon, 10 Apr 2017 01:07:38 +0000</pubDate>
+      
+      <guid>http://petrie.github.io/post/2017-04-10-mac-php-version/</guid>
+      <description>知识点 类*nx系统，系统默认软件的安装位置 /usr/bin 非系统默认，brew安装的软件安装位置 /usr/local/bin brew安装指定版本php后，执行一下命令，设置新版本为</description>
+    </item>
+    
+  </channel>
+</rss>
